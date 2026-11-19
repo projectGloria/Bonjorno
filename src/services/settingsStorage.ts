@@ -15,6 +15,7 @@ import type {
   QuickLinkLayout,
   ThemeMode,
   TodoItem,
+  WidgetId,
 } from '../types/settings';
 import { normalizeAndValidateUrl } from '../utils/url';
 import { storageGet, storageSet } from './chromeApi';
@@ -42,6 +43,7 @@ const VALID_SECTIONS: DashboardSectionId[] = [
   'quickLinks',
   'widgets',
 ];
+const VALID_WIDGETS: WidgetId[] = ['todo', 'notes'];
 const VALID_ENGINES: BuiltinSearchEngineId[] = [
   'brave',
   'duckduckgo',
@@ -111,6 +113,26 @@ function sanitizeSectionOrder(value: unknown): DashboardSectionId[] {
     }
   }
   for (const required of VALID_SECTIONS) {
+    if (!seen.has(required)) result.push(required);
+  }
+  return result;
+}
+
+function sanitizeWidgetOrder(value: unknown): WidgetId[] {
+  if (!Array.isArray(value)) return [...DEFAULT_SETTINGS.layout.widgetOrder];
+  const seen = new Set<WidgetId>();
+  const result: WidgetId[] = [];
+  for (const item of value) {
+    if (
+      typeof item === 'string' &&
+      VALID_WIDGETS.includes(item as WidgetId) &&
+      !seen.has(item as WidgetId)
+    ) {
+      seen.add(item as WidgetId);
+      result.push(item as WidgetId);
+    }
+  }
+  for (const required of VALID_WIDGETS) {
     if (!seen.has(required)) result.push(required);
   }
   return result;
@@ -263,6 +285,7 @@ export function sanitizeSettings(raw: unknown): ExtensionSettings {
     },
     layout: {
       sectionOrder: sanitizeSectionOrder(rawLayout.sectionOrder),
+      widgetOrder: sanitizeWidgetOrder(rawLayout.widgetOrder),
       density: pickEnum(
         rawLayout.density,
         VALID_DENSITIES,

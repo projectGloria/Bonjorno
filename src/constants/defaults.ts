@@ -129,6 +129,7 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   },
   layout: {
     sectionOrder: ['hero', 'search', 'quickLinks', 'widgets'],
+    widgetOrder: ['todo', 'notes'],
     density: 'comfortable',
     clockStyle: 'editorial',
     greetingStyle: 'subtle',

@@ -23,6 +23,8 @@ export type QuickLinkLayout = 'grid' | 'compact' | 'dock' | 'list';
 
 export type DashboardSectionId = 'hero' | 'search' | 'quickLinks' | 'widgets';
 
+export type WidgetId = 'todo' | 'notes';
+
 export type BuiltinSearchEngineId =
   | 'brave'
   | 'duckduckgo'
@@ -99,6 +101,7 @@ export interface AppearanceSettings {
 
 export interface LayoutSettings {
   sectionOrder: DashboardSectionId[];
+  widgetOrder: WidgetId[];
   density: DensityMode;
   clockStyle: ClockStyle;
   greetingStyle: GreetingStyle;

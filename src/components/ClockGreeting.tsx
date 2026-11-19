@@ -1,6 +1,7 @@
 import { useClock } from '../hooks/useClock';
 import type {
   BehaviorSettings,
+  ClockStyle,
   LayoutSettings,
   VisibilitySettings,
 } from '../types/settings';
@@ -14,12 +15,20 @@ interface ClockGreetingProps {
   behavior: BehaviorSettings;
   layout: LayoutSettings;
   visibility: VisibilitySettings;
+  editMode?: boolean;
+  onUpdateBehavior?: (patch: Partial<BehaviorSettings>) => void;
+  onUpdateLayout?: (patch: Partial<LayoutSettings>) => void;
 }
+
+const CLOCK_STYLES: ClockStyle[] = ['editorial', 'display', 'mono', 'minimal'];
 
 export function ClockGreeting({
   behavior,
   layout,
   visibility,
+  editMode = false,
+  onUpdateBehavior,
+  onUpdateLayout,
 }: ClockGreetingProps) {
   const now = useClock(behavior.showSeconds);
 
@@ -35,9 +44,18 @@ export function ClockGreeting({
     behavior.customGreeting
   );
 
+  const cycleClockStyle = () => {
+    if (!onUpdateLayout) return;
+    const idx = CLOCK_STYLES.indexOf(layout.clockStyle);
+    const next = CLOCK_STYLES[(idx + 1) % CLOCK_STYLES.length];
+    onUpdateLayout({ clockStyle: next });
+  };
+
   return (
     <section
-      className={`hero-block clock-style-${layout.clockStyle} greeting-style-${layout.greetingStyle}`}
+      className={`hero-block clock-style-${layout.clockStyle} greeting-style-${layout.greetingStyle} ${
+        editMode ? 'is-edit-mode' : ''
+      }`}
       aria-label="Clock and greeting"
     >
       {visibility.clock && (
@@ -50,9 +68,26 @@ export function ClockGreeting({
 
       {(visibility.date || visibility.greeting) && (
         <div className="hero-meta">
-          {visibility.greeting && (
-            <p className="greeting-text">{greetingText}</p>
-          )}
+          {visibility.greeting &&
+            (editMode && onUpdateBehavior ? (
+              <input
+                type="text"
+                className="inline-greeting-input"
+                value={behavior.customGreeting || behavior.userName}
+                onChange={(e) => {
+                  if (behavior.customGreeting) {
+                    onUpdateBehavior({ customGreeting: e.target.value });
+                  } else {
+                    onUpdateBehavior({ userName: e.target.value });
+                  }
+                }}
+                placeholder="Your name or greeting..."
+                aria-label="Edit greeting name"
+                onMouseDown={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <p className="greeting-text">{greetingText}</p>
+            ))}
           {visibility.greeting &&
             visibility.date &&
             layout.greetingStyle === 'inline' && (
@@ -61,6 +96,39 @@ export function ClockGreeting({
               </span>
             )}
           {visibility.date && <p className="date-text">{dateText}</p>}
+        </div>
+      )}
+
+      {editMode && onUpdateBehavior && onUpdateLayout && (
+        <div
+          className="inline-edit-chips"
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="mini-chip-btn"
+            onClick={() =>
+              onUpdateBehavior({ use24HourClock: !behavior.use24HourClock })
+            }
+          >
+            {behavior.use24HourClock ? '24h' : '12h'}
+          </button>
+          <button
+            type="button"
+            className="mini-chip-btn"
+            onClick={() =>
+              onUpdateBehavior({ showSeconds: !behavior.showSeconds })
+            }
+          >
+            {behavior.showSeconds ? 'Hide sec' : 'Show sec'}
+          </button>
+          <button
+            type="button"
+            className="mini-chip-btn"
+            onClick={cycleClockStyle}
+          >
+            Style: {layout.clockStyle}
+          </button>
         </div>
       )}
     </section>

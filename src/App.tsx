@@ -2,7 +2,16 @@ import { useEffect, useState } from 'react';
 import { BackgroundLayer } from './components/BackgroundLayer';
 import { BookmarksDrawer } from './components/BookmarksDrawer';
 import { ClockGreeting } from './components/ClockGreeting';
-import { BookmarkIcon, SettingsIcon } from './components/Icons';
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  BookmarkIcon,
+  CheckIcon,
+  CloseIcon,
+  EditIcon,
+  GripIcon,
+  SettingsIcon,
+} from './components/Icons';
 import { QuickLinks } from './components/QuickLinks';
 import { SearchBar } from './components/SearchBar';
 import { SettingsDrawer } from './components/SettingsDrawer';
@@ -11,6 +20,15 @@ import { WeatherPill } from './components/WeatherPill';
 import { WidgetsPanel } from './components/WidgetsPanel';
 import { useSettings } from './hooks/useSettings';
 import type { DashboardSectionId } from './types/settings';
+
+const SECTION_MIME = 'application/x-bonjorno-section';
+
+const SECTION_TITLES: Record<DashboardSectionId, string> = {
+  hero: 'Clock & Greeting',
+  search: 'Search Bar',
+  quickLinks: 'Quick Links',
+  widgets: 'Widgets',
+};
 
 function useResolvedTheme(mode: 'dark' | 'light' | 'system'): 'dark' | 'light' {
   const [systemDark, setSystemDark] = useState(() =>
@@ -37,6 +55,11 @@ export function App() {
     useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [bookmarksOpen, setBookmarksOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [draggedSection, setDraggedSection] =
+    useState<DashboardSectionId | null>(null);
+  const [dragOverSection, setDragOverSection] =
+    useState<DashboardSectionId | null>(null);
 
   const resolvedTheme = useResolvedTheme(settings.appearance.theme);
 
@@ -61,9 +84,13 @@ export function App() {
     settings.appearance.surfaceOpacity,
   ]);
 
-  // Global keyboard shortcut: "," opens Settings when not focused on an input
+  // Global keyboard shortcuts: "," opens Settings; Escape exits Edit Mode
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && editMode && !settingsOpen && !bookmarksOpen) {
+        setEditMode(false);
+        return;
+      }
       if (e.key !== ',' || e.metaKey || e.ctrlKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
       if (
@@ -79,23 +106,114 @@ export function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [editMode, settingsOpen, bookmarksOpen]);
 
-  const renderSection = (sectionId: DashboardSectionId) => {
+  const reorderSection = (
+    fromId: DashboardSectionId,
+    toId: DashboardSectionId
+  ) => {
+    if (fromId === toId) return;
+    updateSettings((prev) => {
+      const order = [...prev.layout.sectionOrder];
+      const fromIdx = order.indexOf(fromId);
+      const toIdx = order.indexOf(toId);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+      const [moved] = order.splice(fromIdx, 1);
+      order.splice(toIdx, 0, moved);
+      return {
+        ...prev,
+        layout: { ...prev.layout, sectionOrder: order },
+      };
+    });
+  };
+
+  const moveSectionBy = (id: DashboardSectionId, delta: -1 | 1) => {
+    updateSettings((prev) => {
+      const order = [...prev.layout.sectionOrder];
+      const idx = order.indexOf(id);
+      const target = idx + delta;
+      if (idx === -1 || target < 0 || target >= order.length) return prev;
+      const [moved] = order.splice(idx, 1);
+      order.splice(target, 0, moved);
+      return {
+        ...prev,
+        layout: { ...prev.layout, sectionOrder: order },
+      };
+    });
+  };
+
+  const hideSection = (id: DashboardSectionId) => {
+    updateSettings((prev) => {
+      if (id === 'hero') {
+        return {
+          ...prev,
+          visibility: {
+            ...prev.visibility,
+            clock: false,
+            date: false,
+            greeting: false,
+          },
+        };
+      }
+      if (id === 'search') {
+        return { ...prev, visibility: { ...prev.visibility, search: false } };
+      }
+      if (id === 'quickLinks') {
+        return {
+          ...prev,
+          visibility: { ...prev.visibility, quickLinks: false, topSites: false },
+        };
+      }
+      return {
+        ...prev,
+        visibility: { ...prev.visibility, todo: false, notes: false },
+      };
+    });
+  };
+
+  const isSectionVisible = (id: DashboardSectionId): boolean => {
+    switch (id) {
+      case 'hero':
+        return (
+          settings.visibility.clock ||
+          settings.visibility.date ||
+          settings.visibility.greeting
+        );
+      case 'search':
+        return settings.visibility.search;
+      case 'quickLinks':
+        return settings.visibility.quickLinks || settings.visibility.topSites;
+      case 'widgets':
+        return settings.visibility.todo || settings.visibility.notes;
+    }
+  };
+
+  const renderSectionContent = (sectionId: DashboardSectionId) => {
     switch (sectionId) {
       case 'hero':
         return (
           <ClockGreeting
-            key="hero"
             behavior={settings.behavior}
             layout={settings.layout}
             visibility={settings.visibility}
+            editMode={editMode}
+            onUpdateBehavior={(patch) =>
+              updateSettings((prev) => ({
+                ...prev,
+                behavior: { ...prev.behavior, ...patch },
+              }))
+            }
+            onUpdateLayout={(patch) =>
+              updateSettings((prev) => ({
+                ...prev,
+                layout: { ...prev.layout, ...patch },
+              }))
+            }
           />
         );
       case 'search':
-        return settings.visibility.search ? (
+        return (
           <SearchBar
-            key="search"
             behavior={settings.behavior}
             onSelectEngine={(searchEngine) =>
               updateSettings((prev) => ({
@@ -104,15 +222,17 @@ export function App() {
               }))
             }
           />
-        ) : null;
+        );
       case 'quickLinks':
         return (
-          <div key="quickLinks" className="links-cluster">
+          <div className="links-cluster">
             {settings.visibility.quickLinks && (
               <QuickLinks
                 links={settings.quickLinks}
                 layout={settings.layout}
                 openInNewTab={settings.behavior.openLinksInNewTab}
+                editMode={editMode}
+                onToggleEditMode={() => setEditMode((prev) => !prev)}
                 onChange={(quickLinks) =>
                   updateSettings((prev) => ({ ...prev, quickLinks }))
                 }
@@ -126,24 +246,37 @@ export function App() {
       case 'widgets':
         return (
           <WidgetsPanel
-            key="widgets"
             showTodo={settings.visibility.todo}
             showNotes={settings.visibility.notes}
+            widgetOrder={settings.layout.widgetOrder}
             todos={settings.todos}
             notes={settings.notes}
+            editMode={editMode}
             onChangeTodos={(todos) =>
               updateSettings((prev) => ({ ...prev, todos }))
             }
             onChangeNotes={(notes) =>
               updateSettings((prev) => ({ ...prev, notes }))
             }
+            onReorderWidgets={(widgetOrder) =>
+              updateSettings((prev) => ({
+                ...prev,
+                layout: { ...prev.layout, widgetOrder },
+              }))
+            }
           />
         );
     }
   };
 
+  const visibleSections = settings.layout.sectionOrder.filter(isSectionVisible);
+
   return (
-    <div className={`app-shell ${loaded ? 'is-ready' : ''}`}>
+    <div
+      className={`app-shell ${loaded ? 'is-ready' : ''} ${
+        editMode ? 'is-edit-mode' : ''
+      }`}
+    >
       <BackgroundLayer appearance={settings.appearance} />
 
       <header className="topbar">
@@ -173,6 +306,19 @@ export function App() {
               {saveError}
             </span>
           )}
+          {(editMode || !settings.visibility.quickLinks) && (
+            <button
+              type="button"
+              className={`topbar-pill surface-card ${
+                editMode ? 'is-edit-active' : ''
+              }`}
+              onClick={() => setEditMode((prev) => !prev)}
+              aria-pressed={editMode}
+            >
+              {editMode ? <CheckIcon size={15} /> : <EditIcon size={15} />}
+              <span>{editMode ? 'Done Editing' : 'Edit'}</span>
+            </button>
+          )}
           <button
             type="button"
             className="topbar-pill topbar-icon-pill surface-card"
@@ -188,7 +334,95 @@ export function App() {
 
       <main className="dashboard-main">
         <div className="dashboard-stack">
-          {settings.layout.sectionOrder.map((id) => renderSection(id))}
+          {visibleSections.map((id, idx) => (
+            <div
+              key={id}
+              className={`dashboard-section-slot ${
+                editMode ? 'is-editable-section' : ''
+              } ${dragOverSection === id ? 'is-section-drag-over' : ''} ${
+                draggedSection === id ? 'is-section-dragging' : ''
+              }`}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData(SECTION_MIME, id);
+                e.dataTransfer.effectAllowed = 'move';
+                setDraggedSection(id);
+              }}
+              onDragOver={(e) => {
+                if (
+                  !draggedSection &&
+                  !e.dataTransfer.types.includes(SECTION_MIME)
+                ) {
+                  return;
+                }
+                e.preventDefault();
+                if (dragOverSection !== id) setDragOverSection(id);
+              }}
+              onDragLeave={() => {
+                if (dragOverSection === id) setDragOverSection(null);
+              }}
+              onDrop={(e) => {
+                if (
+                  !draggedSection &&
+                  !e.dataTransfer.types.includes(SECTION_MIME)
+                ) {
+                  return;
+                }
+                e.preventDefault();
+                if (draggedSection) {
+                  reorderSection(draggedSection, id);
+                }
+                setDraggedSection(null);
+                setDragOverSection(null);
+              }}
+              onDragEnd={() => {
+                setDraggedSection(null);
+                setDragOverSection(null);
+              }}
+            >
+              {editMode && (
+                <div className="section-edit-bar">
+                  <span className="section-edit-label">
+                    <GripIcon size={13} />
+                    {SECTION_TITLES[id]}
+                  </span>
+                  <div className="section-edit-controls">
+                    <button
+                      type="button"
+                      className="icon-btn-tiny"
+                      onClick={() => moveSectionBy(id, -1)}
+                      disabled={idx === 0}
+                      title="Move section up"
+                      aria-label={`Move ${SECTION_TITLES[id]} up`}
+                    >
+                      <ArrowUpIcon size={12} />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-btn-tiny"
+                      onClick={() => moveSectionBy(id, 1)}
+                      disabled={idx === visibleSections.length - 1}
+                      title="Move section down"
+                      aria-label={`Move ${SECTION_TITLES[id]} down`}
+                    >
+                      <ArrowDownIcon size={12} />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-btn-tiny danger"
+                      onClick={() => hideSection(id)}
+                      title={`Hide ${SECTION_TITLES[id]}`}
+                      aria-label={`Hide ${SECTION_TITLES[id]}`}
+                    >
+                      <CloseIcon size={12} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {renderSectionContent(id)}
+            </div>
+          ))}
         </div>
       </main>
 

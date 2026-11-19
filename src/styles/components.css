@@ -454,6 +454,8 @@
 .quicklink-add-row {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 8px;
   padding-top: 12px;
   opacity: 0;
   transform: translateY(-4px);
@@ -464,10 +466,34 @@
 
 .quicklinks-section:hover .quicklink-add-row,
 .quicklinks-section:focus-within .quicklink-add-row,
-.quicklinks-section.is-empty .quicklink-add-row {
+.quicklinks-section.is-empty .quicklink-add-row,
+.quicklinks-section.is-edit-mode .quicklink-add-row {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+}
+
+.quicklink-add-btn.is-edit-active,
+.topbar-pill.is-edit-active {
+  border-style: solid;
+  border-color: var(--accent);
+  background-color: color-mix(in srgb, var(--accent) 20%, rgba(var(--surface-rgb), 0.85));
+  color: var(--text-primary);
+}
+
+.quicklink-actions.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.quicklink-item.is-editable-item {
+  cursor: grab;
+  border-style: dashed;
+  border-color: var(--border-strong);
+}
+
+.quicklink-item.is-editable-item:active {
+  cursor: grabbing;
 }
 
 .quicklink-add-btn {
@@ -1604,3 +1630,154 @@
   gap: 8px;
   margin-top: 16px;
 }
+
+/* ==========================================================================
+   Edit Mode & Universal Drag-and-Drop Realignment
+   ========================================================================== */
+.dashboard-section-slot {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: var(--radius-lg);
+  transition: border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+
+.dashboard-section-slot.is-editable-section {
+  padding: 14px 16px 16px;
+  border: 1px dashed var(--border-strong);
+  background-color: rgba(var(--surface-rgb), 0.22);
+  cursor: grab;
+}
+
+.dashboard-section-slot.is-editable-section:active {
+  cursor: grabbing;
+}
+
+.dashboard-section-slot.is-section-dragging {
+  opacity: 0.45;
+}
+
+.dashboard-section-slot.is-section-drag-over {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 32%, transparent);
+  background-color: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.section-edit-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.section-edit-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.section-edit-controls {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.inline-greeting-input {
+  background-color: var(--input-bg);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 4px 12px;
+  font-size: 15px;
+  text-align: center;
+  color: var(--text-primary);
+  min-width: 210px;
+}
+
+.inline-greeting-input:focus {
+  outline: none;
+  border-style: solid;
+  border-color: var(--accent);
+}
+
+.inline-edit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.mini-chip-btn {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background-color: rgba(var(--surface-rgb), 0.72);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color var(--duration-fast), border-color var(--duration-fast);
+}
+
+.mini-chip-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.drag-grip {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  cursor: grab;
+  opacity: 0.65;
+  transition: opacity var(--duration-fast), color var(--duration-fast);
+}
+
+.drag-grip:hover {
+  opacity: 1;
+  color: var(--text-primary);
+}
+
+.todo-grip {
+  opacity: 0.35;
+}
+
+.todo-item:hover .todo-grip {
+  opacity: 0.85;
+}
+
+.todo-item.is-dragging,
+.widget-card.is-dragging {
+  opacity: 0.45;
+}
+
+.todo-item.is-drag-over {
+  background-color: color-mix(in srgb, var(--accent) 16%, transparent);
+  outline: 1px dashed var(--accent);
+}
+
+.widget-card.is-drag-over {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.widget-card.is-editable-item {
+  border-style: dashed;
+  border-color: var(--border-strong);
+  cursor: grab;
+}
+

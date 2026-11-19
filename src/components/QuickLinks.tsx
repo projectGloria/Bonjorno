@@ -5,6 +5,7 @@ import { FaviconBadge } from './FaviconBadge';
 import {
   ArrowDownIcon,
   ArrowUpIcon,
+  CheckIcon,
   CloseIcon,
   EditIcon,
   PlusIcon,
@@ -15,6 +16,8 @@ interface QuickLinksProps {
   links: QuickLink[];
   layout: LayoutSettings;
   openInNewTab: boolean;
+  editMode: boolean;
+  onToggleEditMode: () => void;
   onChange: (next: QuickLink[]) => void;
 }
 
@@ -24,10 +27,14 @@ interface LinkDraft {
   url: string;
 }
 
+const LINK_MIME = 'application/x-bonjorno-link';
+
 export function QuickLinks({
   links,
   layout,
   openInNewTab,
+  editMode,
+  onToggleEditMode,
   onChange,
 }: QuickLinksProps) {
   const [draft, setDraft] = useState<LinkDraft | null>(null);
@@ -113,7 +120,9 @@ export function QuickLinks({
 
   return (
     <section
-      className={`quicklinks-section ${links.length === 0 ? 'is-empty' : ''}`}
+      className={`quicklinks-section ${links.length === 0 ? 'is-empty' : ''} ${
+        editMode ? 'is-edit-mode' : ''
+      }`}
       aria-label="Quick links"
     >
       <div
@@ -129,21 +138,34 @@ export function QuickLinks({
             key={link.id}
             className={`quicklink-item surface-card ${
               dragOverId === link.id ? 'is-drag-over' : ''
-            } ${draggedId === link.id ? 'is-dragging' : ''}`}
+            } ${draggedId === link.id ? 'is-dragging' : ''} ${
+              editMode ? 'is-editable-item' : ''
+            }`}
             draggable
-            onDragStart={() => setDraggedId(link.id)}
+            onDragStart={(e) => {
+              e.stopPropagation();
+              e.dataTransfer.setData(LINK_MIME, link.id);
+              e.dataTransfer.effectAllowed = 'move';
+              setDraggedId(link.id);
+            }}
             onDragOver={(e) => {
+              if (!draggedId && !e.dataTransfer.types.includes(LINK_MIME)) return;
               e.preventDefault();
+              e.stopPropagation();
               if (dragOverId !== link.id) setDragOverId(link.id);
             }}
-            onDragLeave={() => {
+            onDragLeave={(e) => {
+              e.stopPropagation();
               if (dragOverId === link.id) setDragOverId(null);
             }}
             onDrop={(e) => {
+              if (!draggedId && !e.dataTransfer.types.includes(LINK_MIME)) return;
               e.preventDefault();
+              e.stopPropagation();
               handleDrop(link.id);
             }}
-            onDragEnd={() => {
+            onDragEnd={(e) => {
+              e.stopPropagation();
               setDraggedId(null);
               setDragOverId(null);
             }}
@@ -151,7 +173,18 @@ export function QuickLinks({
             <a
               href={link.url}
               className="quicklink-anchor"
-              title={`${link.title} — ${extractDomainLabel(link.url)}`}
+              title={
+                editMode
+                  ? `Click to edit ${link.title} or drag to reorder`
+                  : `${link.title} — ${extractDomainLabel(link.url)}`
+              }
+              onClick={(e) => {
+                if (editMode) {
+                  e.preventDefault();
+                  openEditModal(link);
+                }
+              }}
+              draggable={false}
               {...linkTargetProps}
             >
               <FaviconBadge
@@ -169,46 +202,51 @@ export function QuickLinks({
               </span>
             </a>
 
-            <div className="quicklink-actions" aria-label={`Manage ${link.title}`}>
-              <button
-                type="button"
-                className="icon-btn-tiny"
-                onClick={() => moveLink(idx, -1)}
-                disabled={idx === 0}
-                title="Move earlier"
-                aria-label={`Move ${link.title} earlier`}
+            {editMode && (
+              <div
+                className="quicklink-actions is-visible"
+                aria-label={`Manage ${link.title}`}
               >
-                <ArrowUpIcon size={12} />
-              </button>
-              <button
-                type="button"
-                className="icon-btn-tiny"
-                onClick={() => moveLink(idx, 1)}
-                disabled={idx === links.length - 1}
-                title="Move later"
-                aria-label={`Move ${link.title} later`}
-              >
-                <ArrowDownIcon size={12} />
-              </button>
-              <button
-                type="button"
-                className="icon-btn-tiny"
-                onClick={() => openEditModal(link)}
-                title="Edit shortcut"
-                aria-label={`Edit ${link.title}`}
-              >
-                <EditIcon size={12} />
-              </button>
-              <button
-                type="button"
-                className="icon-btn-tiny danger"
-                onClick={() => handleDelete(link.id)}
-                title="Delete shortcut"
-                aria-label={`Delete ${link.title}`}
-              >
-                <TrashIcon size={12} />
-              </button>
-            </div>
+                <button
+                  type="button"
+                  className="icon-btn-tiny"
+                  onClick={() => moveLink(idx, -1)}
+                  disabled={idx === 0}
+                  title="Move earlier"
+                  aria-label={`Move ${link.title} earlier`}
+                >
+                  <ArrowUpIcon size={12} />
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn-tiny"
+                  onClick={() => moveLink(idx, 1)}
+                  disabled={idx === links.length - 1}
+                  title="Move later"
+                  aria-label={`Move ${link.title} later`}
+                >
+                  <ArrowDownIcon size={12} />
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn-tiny"
+                  onClick={() => openEditModal(link)}
+                  title="Edit shortcut"
+                  aria-label={`Edit ${link.title}`}
+                >
+                  <EditIcon size={12} />
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn-tiny danger"
+                  onClick={() => handleDelete(link.id)}
+                  title="Delete shortcut"
+                  aria-label={`Delete ${link.title}`}
+                >
+                  <TrashIcon size={12} />
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -222,6 +260,21 @@ export function QuickLinks({
         >
           <PlusIcon size={15} />
           <span className="quicklink-add-label">Add link</span>
+        </button>
+
+        <button
+          type="button"
+          className={`quicklink-add-btn surface-card ${
+            editMode ? 'is-edit-active' : ''
+          }`}
+          onClick={onToggleEditMode}
+          aria-pressed={editMode}
+          aria-label={editMode ? 'Finish editing layout' : 'Edit layout and items'}
+        >
+          {editMode ? <CheckIcon size={14} /> : <EditIcon size={14} />}
+          <span className="quicklink-add-label">
+            {editMode ? 'Done' : 'Edit'}
+          </span>
         </button>
       </div>
 
