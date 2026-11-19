@@ -138,6 +138,7 @@ export interface ExtensionSettings {
 export interface ExportPayload {
   app: 'bonjorno';
   exportedAt: string;
+  updatedAt?: number;
   schemaVersion: number;
   settings: ExtensionSettings;
 }

@@ -51,8 +51,14 @@ function useResolvedTheme(mode: 'dark' | 'light' | 'system'): 'dark' | 'light' {
 }
 
 export function App() {
-  const { settings, loaded, saveError, updateSettings, replaceSettings } =
-    useSettings();
+  const {
+    settings,
+    loaded,
+    saveError,
+    rootSync,
+    updateSettings,
+    replaceSettings,
+  } = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [bookmarksOpen, setBookmarksOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -306,6 +312,16 @@ export function App() {
               {saveError}
             </span>
           )}
+          {rootSync.info.status === 'needs-permission' && (
+            <button
+              type="button"
+              className="topbar-pill surface-card"
+              onClick={() => void rootSync.reconnectFile()}
+              title="Reconnect write access to bonjorno.config.json"
+            >
+              <span>Sync Config</span>
+            </button>
+          )}
           {(editMode || !settings.visibility.quickLinks) && (
             <button
               type="button"
@@ -435,6 +451,7 @@ export function App() {
       <SettingsDrawer
         open={settingsOpen}
         settings={settings}
+        rootSync={rootSync}
         onUpdate={updateSettings}
         onReplace={replaceSettings}
         onClose={() => setSettingsOpen(false)}

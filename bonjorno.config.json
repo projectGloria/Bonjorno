@@ -1,0 +1,107 @@
+{
+  "app": "bonjorno",
+  "exportedAt": "2026-11-19T05:47:36.845Z",
+  "updatedAt": 1795067256845,
+  "schemaVersion": 1,
+  "settings": {
+    "schemaVersion": 1,
+    "appearance": {
+      "theme": "dark",
+      "accentColor": "#bc0606",
+      "backgroundMode": "gradient",
+      "solidColor": "#0d0f14",
+      "gradientId": "dawn-horizon",
+      "sceneId": "alpine-dusk",
+      "customImageId": null,
+      "customImages": [],
+      "backgroundFit": "cover",
+      "backgroundPosition": "center",
+      "backgroundBlur": 0,
+      "backgroundDim": 22,
+      "surfaceOpacity": 74
+    },
+    "layout": {
+      "sectionOrder": [
+        "hero",
+        "search",
+        "quickLinks",
+        "widgets"
+      ],
+      "widgetOrder": [
+        "todo",
+        "notes"
+      ],
+      "density": "compact",
+      "clockStyle": "display",
+      "greetingStyle": "centered",
+      "quickLinkLayout": "grid",
+      "quickLinkColumns": 6
+    },
+    "behavior": {
+      "searchEngine": "google",
+      "customSearchName": "Custom",
+      "customSearchUrl": "https://search.brave.com/search?q=%s",
+      "autoFocusSearch": true,
+      "openLinksInNewTab": false,
+      "use24HourClock": true,
+      "showSeconds": false,
+      "dateFormat": "long",
+      "userName": "Nihil",
+      "customGreeting": "",
+      "enableAnimations": true
+    },
+    "visibility": {
+      "clock": true,
+      "date": true,
+      "greeting": true,
+      "search": true,
+      "quickLinks": true,
+      "bookmarks": false,
+      "topSites": false,
+      "todo": false,
+      "notes": true
+    },
+    "weather": {
+      "enabled": false,
+      "consentGiven": false,
+      "unit": "celsius",
+      "location": null
+    },
+    "quickLinks": [
+      {
+        "id": "ql-github",
+        "title": "Gloria",
+        "url": "https://github.com/projectGloria?tab=repositories"
+      },
+      {
+        "id": "ql-youtube",
+        "title": "YouTube",
+        "url": "https://www.youtube.com/"
+      },
+      {
+        "id": "ql-wiki",
+        "title": "Wikipedia",
+        "url": "https://www.wikipedia.org/"
+      },
+      {
+        "id": "ql-1795066203958-auqn",
+        "title": "Nihil",
+        "url": "https://github.com/Nihilnia?tab=repositories"
+      },
+      {
+        "id": "ql-1795066446921-78zi",
+        "title": "Claude",
+        "url": "https://claude.ai/"
+      }
+    ],
+    "todos": [
+      {
+        "id": "todo-1795065519171-g0iq",
+        "text": "ABC",
+        "completed": false,
+        "createdAt": 1795065519171
+      }
+    ],
+    "notes": ""
+  }
+}

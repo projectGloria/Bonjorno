@@ -19,8 +19,10 @@ import type {
 } from '../types/settings';
 import { normalizeAndValidateUrl } from '../utils/url';
 import { storageGet, storageSet } from './chromeApi';
+import { fetchRootConfigText } from './localConfigSync';
 
 export const SETTINGS_STORAGE_KEY = 'bonjorno_settings_v1';
+export const SETTINGS_UPDATED_AT_KEY = 'bonjorno_settings_updated_at_v1';
 
 const VALID_THEMES: ThemeMode[] = ['dark', 'light', 'system'];
 const VALID_BG_MODES: BackgroundMode[] = ['solid', 'gradient', 'scene', 'custom'];
@@ -392,19 +394,98 @@ export function sanitizeSettings(raw: unknown): ExtensionSettings {
   };
 }
 
+export interface ParsedRootConfig {
+  settings: ExtensionSettings;
+  updatedAt: number;
+}
+
+export function resolveInitialSettings(
+  stored: unknown,
+  storedUpdatedAt: number | null,
+  rootConfig: ParsedRootConfig | null
+): { settings: ExtensionSettings; updatedAt: number; fromRoot: boolean } {
+  const localTs =
+    typeof storedUpdatedAt === 'number' && Number.isFinite(storedUpdatedAt)
+      ? storedUpdatedAt
+      : 0;
+
+  if (stored === null || stored === undefined) {
+    if (rootConfig) {
+      return {
+        settings: rootConfig.settings,
+        updatedAt: rootConfig.updatedAt,
+        fromRoot: true,
+      };
+    }
+    return {
+      settings: structuredClone(DEFAULT_SETTINGS),
+      updatedAt: 0,
+      fromRoot: false,
+    };
+  }
+
+  if (rootConfig && rootConfig.updatedAt > 0 && rootConfig.updatedAt > localTs) {
+    return {
+      settings: rootConfig.settings,
+      updatedAt: rootConfig.updatedAt,
+      fromRoot: true,
+    };
+  }
+
+  return {
+    settings: sanitizeSettings(stored),
+    updatedAt: localTs,
+    fromRoot: false,
+  };
+}
+
 export async function loadSettings(): Promise<ExtensionSettings> {
-  const stored = await storageGet<unknown>(SETTINGS_STORAGE_KEY);
-  return sanitizeSettings(stored);
+  const [stored, storedUpdatedAt, rootText] = await Promise.all([
+    storageGet<unknown>(SETTINGS_STORAGE_KEY),
+    storageGet<number>(SETTINGS_UPDATED_AT_KEY),
+    fetchRootConfigText(),
+  ]);
+
+  let rootConfig: ParsedRootConfig | null = null;
+  if (rootText) {
+    const parsed = parseImportJson(rootText);
+    if (parsed.ok) {
+      rootConfig = {
+        settings: parsed.settings,
+        updatedAt: parsed.updatedAt,
+      };
+    }
+  }
+
+  const resolved = resolveInitialSettings(stored, storedUpdatedAt, rootConfig);
+  if (resolved.fromRoot) {
+    await Promise.all([
+      storageSet(SETTINGS_STORAGE_KEY, resolved.settings),
+      storageSet(SETTINGS_UPDATED_AT_KEY, resolved.updatedAt),
+    ]);
+  }
+  return resolved.settings;
 }
 
-export async function saveSettings(settings: ExtensionSettings): Promise<boolean> {
-  return storageSet(SETTINGS_STORAGE_KEY, settings);
+export async function saveSettings(
+  settings: ExtensionSettings,
+  updatedAt = Date.now()
+): Promise<boolean> {
+  const ok = await storageSet(SETTINGS_STORAGE_KEY, settings);
+  if (ok) {
+    await storageSet(SETTINGS_UPDATED_AT_KEY, updatedAt);
+  }
+  return ok;
 }
 
-export function createExportPayload(settings: ExtensionSettings): ExportPayload {
+export function createExportPayload(
+  settings: ExtensionSettings,
+  updatedAt = Date.now()
+): ExportPayload {
   return {
     app: 'bonjorno',
-    exportedAt: new Date().toISOString(),
+    exportedAt: new Date(updatedAt).toISOString(),
+    updatedAt,
     schemaVersion: CURRENT_SCHEMA_VERSION,
     settings: {
       ...settings,
@@ -424,7 +505,9 @@ export function createExportPayload(settings: ExtensionSettings): ExportPayload 
 
 export function parseImportJson(
   jsonText: string
-): { ok: true; settings: ExtensionSettings } | { ok: false; error: string } {
+):
+  | { ok: true; settings: ExtensionSettings; updatedAt: number }
+  | { ok: false; error: string } {
   let parsed: unknown;
   try {
     parsed = JSON.parse(jsonText);
@@ -453,5 +536,19 @@ export function parseImportJson(
     };
   }
 
-  return { ok: true, settings: sanitizeSettings(parsed.settings) };
+  let updatedAt = 0;
+  if (
+    typeof parsed.updatedAt === 'number' &&
+    Number.isFinite(parsed.updatedAt) &&
+    parsed.updatedAt >= 0
+  ) {
+    updatedAt = parsed.updatedAt;
+  } else if (typeof parsed.exportedAt === 'string') {
+    const parsedTime = Date.parse(parsed.exportedAt);
+    if (Number.isFinite(parsedTime) && parsedTime > 0) {
+      updatedAt = parsedTime;
+    }
+  }
+
+  return { ok: true, settings: sanitizeSettings(parsed.settings), updatedAt };
 }

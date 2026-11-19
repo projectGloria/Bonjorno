@@ -3,6 +3,7 @@ import { DEFAULT_SETTINGS } from '../src/constants/defaults';
 import {
   createExportPayload,
   parseImportJson,
+  resolveInitialSettings,
   sanitizeSettings,
 } from '../src/services/settingsStorage';
 
@@ -63,5 +64,61 @@ describe('Settings sanitization and import/export', () => {
         JSON.stringify({ app: 'bonjorno', schemaVersion: 99, settings: {} })
       ).ok
     ).toBe(false);
+  });
+
+  it('loads from root bonjorno.config.json on a fresh browser install', () => {
+    const rootSettings = sanitizeSettings({
+      ...DEFAULT_SETTINGS,
+      behavior: { ...DEFAULT_SETTINGS.behavior, userName: 'Nihil' },
+      quickLinks: [{ id: 'ql-1', title: 'Local', url: 'https://example.com' }],
+    });
+
+    const resolved = resolveInitialSettings(null, null, {
+      settings: rootSettings,
+      updatedAt: 1700000000000,
+    });
+
+    expect(resolved.fromRoot).toBe(true);
+    expect(resolved.settings.behavior.userName).toBe('Nihil');
+    expect(resolved.settings.quickLinks).toHaveLength(1);
+    expect(resolved.updatedAt).toBe(1700000000000);
+  });
+
+  it('prefers newer root config over older local browser storage', () => {
+    const localSettings = sanitizeSettings({
+      ...DEFAULT_SETTINGS,
+      behavior: { ...DEFAULT_SETTINGS.behavior, userName: 'OldName' },
+    });
+    const rootSettings = sanitizeSettings({
+      ...DEFAULT_SETTINGS,
+      behavior: { ...DEFAULT_SETTINGS.behavior, userName: 'SyncedName' },
+    });
+
+    const resolved = resolveInitialSettings(localSettings, 1000, {
+      settings: rootSettings,
+      updatedAt: 2000,
+    });
+
+    expect(resolved.fromRoot).toBe(true);
+    expect(resolved.settings.behavior.userName).toBe('SyncedName');
+  });
+
+  it('preserves newer local browser storage over older root config', () => {
+    const localSettings = sanitizeSettings({
+      ...DEFAULT_SETTINGS,
+      behavior: { ...DEFAULT_SETTINGS.behavior, userName: 'LatestLocal' },
+    });
+    const rootSettings = sanitizeSettings({
+      ...DEFAULT_SETTINGS,
+      behavior: { ...DEFAULT_SETTINGS.behavior, userName: 'OlderRoot' },
+    });
+
+    const resolved = resolveInitialSettings(localSettings, 3000, {
+      settings: rootSettings,
+      updatedAt: 2000,
+    });
+
+    expect(resolved.fromRoot).toBe(false);
+    expect(resolved.settings.behavior.userName).toBe('LatestLocal');
   });
 });

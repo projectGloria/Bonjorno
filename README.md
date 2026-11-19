@@ -20,7 +20,17 @@
 - **Appearance**: Dark, Light, and System themes; custom accent color swatches & hex picker; Solid colors, ambient Gradients, self-contained vector Scenes, or local Custom Background Image collections (stored in IndexedDB with automatic optimization, scaling, position, blur, and dim controls); adjustable surface transparency.
 - **Layout**: Show or hide individual components, reorder dashboard sections, adjust spacing density (`Compact`, `Comfortable`, `Spacious`), and customize clock, greeting, and shortcut layouts.
 - **Behavior**: Default search engine, auto-focus search, open links in new tab, clock/date format, greeting options, and animation controls (respecting `prefers-reduced-motion`).
-- **Privacy & Data**: Live Grant/Revoke controls for optional permissions, JSON configuration export/import with schema validation, and Reset to Defaults with confirmation.
+- **Privacy & Data**: Live Grant/Revoke controls for optional permissions, automatic local repo sync via `bonjorno.config.json` in the project root, JSON configuration export/import with schema validation, and Reset to Defaults with confirmation.
+
+---
+
+## Portable Local Config (`bonjorno.config.json`)
+
+Your shortcuts, appearance, layout, tasks, and notes can be stored right in **`bonjorno.config.json`** in the repository root so downloading or cloning this repo on another PC resumes right where you left off:
+
+- **Automatic Loading**: `npm run build` bundles `bonjorno.config.json` into `dist/bonjorno.config.json`. On a fresh browser install (or whenever the repo's `bonjorno.config.json` is newer than your local browser storage), Bonjorno automatically loads your shortcuts and settings from it.
+- **Automatic Saving in Brave Extension**: Open **Customize → Privacy & Data → Local Repo Sync** and click **Link `bonjorno.config.json`** once to select the file in your repo root. Changes will auto-save directly to `bonjorno.config.json`.
+- **Automatic Saving in Dev Mode**: When running `npm run dev`, all changes automatically write straight to `bonjorno.config.json` in the repo root.
 
 ---
 

@@ -6,6 +6,8 @@ import {
   SOLID_PRESETS,
 } from '../constants/defaults';
 import { GRADIENT_PRESETS, SCENE_PRESETS } from '../constants/wallpapers';
+import type { RootSyncActions } from '../hooks/useSettings';
+import { ROOT_CONFIG_FILENAME } from '../services/localConfigSync';
 import {
   hasOptionalPermission,
   isExtensionContext,
@@ -60,6 +62,7 @@ const SECTION_LABELS: Record<DashboardSectionId, string> = {
 interface SettingsDrawerProps {
   open: boolean;
   settings: ExtensionSettings;
+  rootSync: RootSyncActions;
   onUpdate: (updater: (prev: ExtensionSettings) => ExtensionSettings) => void;
   onReplace: (next: ExtensionSettings) => void;
   onClose: () => void;
@@ -68,6 +71,7 @@ interface SettingsDrawerProps {
 export function SettingsDrawer({
   open,
   settings,
+  rootSync,
   onUpdate,
   onReplace,
   onClose,
@@ -76,6 +80,10 @@ export function SettingsDrawer({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [importStatus, setImportStatus] = useState<{
+    kind: 'ok' | 'err';
+    text: string;
+  } | null>(null);
+  const [syncMessage, setSyncMessage] = useState<{
     kind: 'ok' | 'err';
     text: string;
   } | null>(null);
@@ -202,16 +210,19 @@ export function SettingsDrawer({
 
   const handleExport = () => {
     const payload = createExportPayload(settings);
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], {
       type: 'application/json',
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `bonjorno-settings-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = ROOT_CONFIG_FILENAME;
     a.click();
     URL.revokeObjectURL(url);
-    setImportStatus({ kind: 'ok', text: 'Settings exported to JSON.' });
+    setImportStatus({
+      kind: 'ok',
+      text: `Exported ${ROOT_CONFIG_FILENAME}. Place it in the repo root folder to keep it with your project.`,
+    });
   };
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1025,6 +1036,181 @@ export function SettingsDrawer({
                 {!isExtensionContext() && (
                   <p className="field-hint mt-sm">
                     Permission toggles become active when installed in Brave.
+                  </p>
+                )}
+              </div>
+
+              <div className="settings-group">
+                <h3>Local Repo Sync ({ROOT_CONFIG_FILENAME})</h3>
+                <p className="field-hint">
+                  Keep your shortcuts and settings in{' '}
+                  <code>{ROOT_CONFIG_FILENAME}</code> in the repository root so
+                  cloning or downloading the repo on another PC picks up right
+                  where you left off.
+                </p>
+
+                {rootSync.info.status === 'dev-synced' && (
+                  <div className="mt-sm">
+                    <p className="field-success">
+                      Auto-saving directly to <code>{ROOT_CONFIG_FILENAME}</code>{' '}
+                      in the project root.
+                    </p>
+                    <div className="data-actions-row mt-sm">
+                      <button
+                        type="button"
+                        className="btn-secondary btn-sm"
+                        onClick={async () => {
+                          const res = await rootSync.saveNow();
+                          setSyncMessage({
+                            kind: res.ok ? 'ok' : 'err',
+                            text: res.message,
+                          });
+                        }}
+                      >
+                        Save Now
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary btn-sm"
+                        onClick={async () => {
+                          const res = await rootSync.reloadFromFile();
+                          setSyncMessage({
+                            kind: res.ok ? 'ok' : 'err',
+                            text: res.message,
+                          });
+                        }}
+                      >
+                        Reload from File
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {rootSync.info.status === 'synced' && (
+                  <div className="mt-sm">
+                    <p className="field-success">
+                      Linked to{' '}
+                      <code>{rootSync.info.fileName ?? ROOT_CONFIG_FILENAME}</code>
+                      . Changes auto-save automatically.
+                    </p>
+                    <div className="data-actions-row mt-sm">
+                      <button
+                        type="button"
+                        className="btn-secondary btn-sm"
+                        onClick={async () => {
+                          const res = await rootSync.saveNow();
+                          setSyncMessage({
+                            kind: res.ok ? 'ok' : 'err',
+                            text: res.message,
+                          });
+                        }}
+                      >
+                        Save Now
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary btn-sm"
+                        onClick={async () => {
+                          const res = await rootSync.reloadFromFile();
+                          setSyncMessage({
+                            kind: res.ok ? 'ok' : 'err',
+                            text: res.message,
+                          });
+                        }}
+                      >
+                        Load from File
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary btn-sm"
+                        onClick={async () => {
+                          await rootSync.unlinkFile();
+                          setSyncMessage({
+                            kind: 'ok',
+                            text: 'Unlinked local config file.',
+                          });
+                        }}
+                      >
+                        Unlink
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {rootSync.info.status === 'needs-permission' && (
+                  <div className="mt-sm">
+                    <p className="field-hint">
+                      Browser restarted — click below to reconnect write access
+                      to{' '}
+                      <code>{rootSync.info.fileName ?? ROOT_CONFIG_FILENAME}</code>.
+                    </p>
+                    <div className="data-actions-row mt-sm">
+                      <button
+                        type="button"
+                        className="btn-primary btn-sm"
+                        onClick={async () => {
+                          const res = await rootSync.reconnectFile();
+                          setSyncMessage({
+                            kind: res.ok ? 'ok' : 'err',
+                            text: res.message,
+                          });
+                        }}
+                      >
+                        Reconnect &amp; Sync
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary btn-sm"
+                        onClick={async () => {
+                          await rootSync.unlinkFile();
+                          setSyncMessage({
+                            kind: 'ok',
+                            text: 'Unlinked local config file.',
+                          });
+                        }}
+                      >
+                        Unlink
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {(rootSync.info.status === 'unlinked' ||
+                  rootSync.info.status === 'error') && (
+                  <div className="data-actions-row mt-sm">
+                    <button
+                      type="button"
+                      className="btn-primary btn-sm"
+                      onClick={async () => {
+                        const res = await rootSync.linkFile();
+                        if (res.cancelled) return;
+                        setSyncMessage({
+                          kind: res.ok ? 'ok' : 'err',
+                          text: res.message,
+                        });
+                      }}
+                    >
+                      Link {ROOT_CONFIG_FILENAME}
+                    </button>
+                  </div>
+                )}
+
+                {rootSync.info.status === 'unsupported' && (
+                  <p className="field-hint mt-sm">
+                    Direct file linking is unavailable in this browser. Use
+                    Export JSON below and save it as{' '}
+                    <code>{ROOT_CONFIG_FILENAME}</code> in the repo root.
+                  </p>
+                )}
+
+                {syncMessage && (
+                  <p
+                    className={
+                      syncMessage.kind === 'err' ? 'field-error' : 'field-success'
+                    }
+                    role="status"
+                  >
+                    {syncMessage.text}
                   </p>
                 )}
               </div>
