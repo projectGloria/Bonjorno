@@ -112,7 +112,10 @@ export function QuickLinks({
     : {};
 
   return (
-    <section className="quicklinks-section" aria-label="Quick links">
+    <section
+      className={`quicklinks-section ${links.length === 0 ? 'is-empty' : ''}`}
+      aria-label="Quick links"
+    >
       <div
         className={`quicklinks-container layout-${layout.quickLinkLayout}`}
         style={
@@ -208,16 +211,16 @@ export function QuickLinks({
             </div>
           </div>
         ))}
+      </div>
 
+      <div className="quicklink-add-row">
         <button
           type="button"
           className="quicklink-add-btn surface-card"
           onClick={openAddModal}
           aria-label="Add shortcut"
         >
-          <span className="quicklink-add-icon">
-            <PlusIcon size={18} />
-          </span>
+          <PlusIcon size={15} />
           <span className="quicklink-add-label">Add link</span>
         </button>
       </div>
