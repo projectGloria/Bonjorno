@@ -24,6 +24,7 @@
   <a href="#installation">Installation</a> ·
   <a href="#usage">Usage</a> ·
   <a href="#building-from-source">Building from source</a> ·
+  <a href="#how-to-release">How to release</a> ·
   <a href="#permissions">Permissions</a> ·
   <a href="#contributing">Contributing</a>
 </p>
@@ -140,6 +141,18 @@ To keep your shortcuts, theme, layout, tasks, and notes portable across machines
    ```bash
    npm run package
    ```
+
+## How to release
+
+1. Update the version in `package.json` and `public/manifest.json`, then commit the change.
+2. Create and push a version tag:
+   ```bash
+   git tag v1.0.0 && git push --tags
+   ```
+3. GitHub Actions (`.github/workflows/build-installers.yml`) automatically runs tests, builds the extension, packages `bonjorno-<version>-all-any.zip` (and `bonjorno-<version>-all-any.crx` when `CRX_PRIVATE_KEY` is configured), uploads them to the **installers** workflow artifact, and publishes a GitHub Release.
+4. Download the packaged installers from:
+   - **GitHub Releases** (tagged releases): **Releases → `<tag>` → Assets**
+   - **GitHub Actions** (tag builds or manual `workflow_dispatch` runs): **Actions → Build Installers → `<run>` → Artifacts → `installers`**
 
 ## Permissions
 
