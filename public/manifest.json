@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Bonjorno — New Tab for Brave",
+  "short_name": "Bonjorno",
+  "version": "1.0.0",
+  "description": "A calm, customizable, privacy-first New Tab dashboard designed for Brave Browser.",
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "permissions": [
+    "storage",
+    "favicon"
+  ],
+  "optional_permissions": [
+    "bookmarks",
+    "topSites"
+  ],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  }
+}
