@@ -1,113 +1,193 @@
-# Bonjorno — Custom New Tab for Brave Browser
+<div align="center">
+  <img src="public/icons/icon-128.png" alt="Bonjorno icon" width="112" />
+  <h1>Bonjorno</h1>
+  <p>A calm, fast, privacy-first Manifest V3 New Tab dashboard for Brave Browser.</p>
 
-**Bonjorno** is a calm, fast, privacy-first **Manifest V3** New Tab extension designed specifically for **Brave Browser**. It replaces Brave's default New Tab page with a refined, customizable dashboard that works completely locally without an account, subscription, or backend.
+  <p>
+    <a href="https://github.com/projectGloria/Bonjorno/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/projectGloria/Bonjorno/ci.yml?style=flat-square&label=CI" alt="CI status" /></a>
+    <img src="https://img.shields.io/badge/Manifest-V3-fb542b?style=flat-square" alt="Manifest V3" />
+    <img src="https://img.shields.io/badge/version-1.0.0-1f2937?style=flat-square" alt="Version 1.0.0" />
+    <img src="https://img.shields.io/badge/React-19-3b82f6?style=flat-square&logo=react&logoColor=white" alt="React 19" />
+    <img src="https://img.shields.io/badge/TypeScript-5.7-3178c6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript 5.7" />
+    <img src="https://img.shields.io/badge/Vite-6-646cff?style=flat-square&logo=vite&logoColor=white" alt="Vite 6" />
+  </p>
+</div>
 
----
+<p align="center">
+  <img src="docs/assets/dashboard-dark.png" alt="Bonjorno dark theme dashboard showing clock, greeting, Brave search bar, quick links, tasks, notes, and weather pill" width="880" />
+</p>
+
+<p align="center">
+  <a href="#features">Features</a> ·
+  <a href="#screenshots">Screenshots</a> ·
+  <a href="#how-it-works">How it works</a> ·
+  <a href="#installation">Installation</a> ·
+  <a href="#usage">Usage</a> ·
+  <a href="#building-from-source">Building from source</a> ·
+  <a href="#permissions">Permissions</a> ·
+  <a href="#contributing">Contributing</a>
+</p>
+
+## About
+
+**Bonjorno** replaces Brave Browser's default New Tab page with a customizable dashboard that runs entirely locally—no account, no subscription, no analytics, and no remote backend. All settings, shortcuts, tasks, and notes stay in your browser (`chrome.storage.local`) and can optionally sync to a portable `bonjorno.config.json` file in your repository root.
 
 ## Features
 
-### Main Dashboard
-- **Clock & Date**: Prominent tabular-numeral clock with 12-hour and 24-hour modes, optional seconds, four typographic styles (`Editorial`, `Display Bold`, `Monospace`, `Minimal`), and configurable date formats (`Long`, `Short`, `Numeric`, `ISO`).
-- **Time-of-Day Greeting**: Subtle automatic greeting (`Good morning`, `Good afternoon`, `Good evening`, `Good night`), optional personal name, custom greeting override, or toggle to hide.
-- **Search Bar**: Brave Search by default, with instant switching between Brave Search, DuckDuckGo, Google, Startpage, Kagi, Perplexity, GitHub, Wikipedia, YouTube, and custom search engine URLs (`%s`). Supports direct URL detection, `/` to focus from anywhere, `Enter` to search, and `Escape` to clear.
-- **Quick Links**: Add, edit, delete, and reorder shortcuts (via drag-and-drop or keyboard-accessible move controls). Uses Brave's local MV3 `/_favicon/` cache with deterministic monogram fallbacks—no external favicon trackers. Supports four layouts: `Grid` (4–8 columns), `Chips`, `Dock`, and `List`.
-- **Brave Bookmarks (Optional)**: Slide-over bookmark browser with folder breadcrumbs and instant search across all folders. Requests the `bookmarks` permission only when enabled.
-- **Most Visited Sites (Optional)**: Displays frequently visited sites locally via Brave's `topSites` API. Requests permission only when enabled.
-- **Tasks & Notes Widgets (Optional)**: Minimal to-do list and local scratchpad persisted in `chrome.storage.local`.
-- **Weather Pill (Optional, Opt-In)**: Disabled by default. When explicitly enabled with user consent, queries the public, privacy-friendly [Open-Meteo](https://open-meteo.com/) API for the city you choose and caches results locally for 30 minutes.
+- **Clock, Date & Greeting**: Tabular-numeral clock with 12/24-hour modes, optional seconds, four typography styles (`Editorial`, `Display`, `Monospace`, `Minimal`), four date formats (`Long`, `Short`, `Numeric`, `ISO`), and an automatic time-of-day or custom greeting.
+- **Multi-Engine Search Bar**: Defaults to Brave Search with one-click switching between Brave Search, DuckDuckGo, Google, Startpage, Kagi, Perplexity, GitHub, Wikipedia, YouTube, and custom `%s` search templates. Detects direct URLs automatically and supports `/` to focus from anywhere.
+- **Quick Links & Optional Brave Integrations**: Add, edit, delete, and reorder shortcuts via drag-and-drop or keyboard controls across four layouts (`Grid` 4–8 columns, `Chips`, `Dock`, `List`). Uses Chromium's local MV3 `/_favicon/` cache with monogram fallbacks, plus opt-in **Bookmarks** drawer and **Most Visited Sites** bar.
+- **Local Widgets & Opt-In Weather**: Built-in **Tasks** checklist and **Notes** scratchpad persisted locally. An optional **Weather** pill (disabled by default) queries [Open-Meteo](https://open-meteo.com/) only after explicit user consent and caches results locally for 30 minutes.
+- **Visual Customization & Edit Mode**: Dark, Light, and System themes; 8 accent presets plus custom hex picker; Solid colors, 6 ambient Gradients, 4 procedural SVG Scenes, or local Custom Background Images (optimized and stored in IndexedDB) with fit, position, blur, dim, and surface opacity controls. Toggle **Edit Mode** to drag-reorder or hide dashboard sections directly.
+- **Portable Local Config (`bonjorno.config.json`)**: Automatically loads settings bundled into `dist/bonjorno.config.json` on fresh installs or newer timestamps, auto-saves to disk via the File System Access API in Brave (or Vite dev middleware during development), and supports schema-validated JSON export/import.
 
-### Customization & Settings
-- **Appearance**: Dark, Light, and System themes; custom accent color swatches & hex picker; Solid colors, ambient Gradients, self-contained vector Scenes, or local Custom Background Image collections (stored in IndexedDB with automatic optimization, scaling, position, blur, and dim controls); adjustable surface transparency.
-- **Layout**: Show or hide individual components, reorder dashboard sections, adjust spacing density (`Compact`, `Comfortable`, `Spacious`), and customize clock, greeting, and shortcut layouts.
-- **Behavior**: Default search engine, auto-focus search, open links in new tab, clock/date format, greeting options, and animation controls (respecting `prefers-reduced-motion`).
-- **Privacy & Data**: Live Grant/Revoke controls for optional permissions, automatic local repo sync via `bonjorno.config.json` in the project root, JSON configuration export/import with schema validation, and Reset to Defaults with confirmation.
+## Screenshots
 
----
+<p align="center">
+  <img src="docs/assets/settings-appearance.png" alt="Bonjorno Customize drawer open on the Appearance tab" width="880" />
+  <br /><em>Customize Drawer: live theme, accent color, background, and surface transparency controls.</em>
+</p>
 
-## Portable Local Config (`bonjorno.config.json`)
+<p align="center">
+  <img src="docs/assets/edit-mode.png" alt="Bonjorno dashboard in Edit Mode showing section drag handles and quick link controls" width="880" />
+  <br /><em>Edit Mode: reorder or hide dashboard sections and adjust clock, greeting, and shortcuts inline.</em>
+</p>
 
-Your shortcuts, appearance, layout, tasks, and notes can be stored right in **`bonjorno.config.json`** in the repository root so downloading or cloning this repo on another PC resumes right where you left off:
+<p align="center">
+  <img src="docs/assets/dashboard-light.png" alt="Bonjorno light theme dashboard using Morning Linen gradient, Display clock, and Dock quick links" width="880" />
+  <br /><em>Light Theme: Morning Linen gradient, Display clock typography, and Dock quick-links layout.</em>
+</p>
 
-- **Automatic Loading**: `npm run build` bundles `bonjorno.config.json` into `dist/bonjorno.config.json`. On a fresh browser install (or whenever the repo's `bonjorno.config.json` is newer than your local browser storage), Bonjorno automatically loads your shortcuts and settings from it.
-- **Automatic Saving in Brave Extension**: Open **Customize → Privacy & Data → Local Repo Sync** and click **Link `bonjorno.config.json`** once to select the file in your repo root. Changes will auto-save directly to `bonjorno.config.json`.
-- **Automatic Saving in Dev Mode**: When running `npm run dev`, all changes automatically write straight to `bonjorno.config.json` in the repo root.
+## How it works
 
----
+```mermaid
+flowchart LR
+  UI["New Tab UI (React + TypeScript)"]
+  Storage["chrome.storage.local\n(settings, links, tasks, notes)"]
+  IDB["IndexedDB\n(custom images & file handle)"]
+  Config["bonjorno.config.json\n(File System Access API / Vite dev)"]
+  Brave["Optional Brave APIs\n(bookmarks, topSites, /_favicon/)"]
+  Weather["Open-Meteo API\n(opt-in, 30-min local cache)"]
 
-## Permissions Explained
+  UI <--> Storage
+  UI <--> IDB
+  UI <--> Config
+  UI --> Brave
+  UI -. "consent required" .-> Weather
+```
 
-Bonjorno follows the principle of least privilege:
+On startup, Bonjorno reads `chrome.storage.local` alongside the bundled `bonjorno.config.json` and merges whichever is newer through a schema sanitizer (`src/services/settingsStorage.ts`). Uploaded wallpapers are resized and stored as blobs in IndexedDB (`src/services/imageStore.ts`), while optional browser APIs and weather lookups remain inactive unless you explicitly turn them on.
 
-| Permission | Type | Why It Is Needed |
-| --- | --- | --- |
-| `storage` | Required | Persists your preferences, quick links, tasks, and notes locally via `chrome.storage.local`. |
-| `favicon` | Required | Reads locally cached site favicons via Chromium's `/_favicon/` API without making external network requests. |
-| `bookmarks` | Optional | Requested **only** if you enable the Bookmarks drawer, to display and search your Brave bookmarks locally. |
-| `topSites` | Optional | Requested **only** if you enable Most Visited Sites, to show frequently visited pages locally. |
+## Installation
 
-Custom uploaded background images are stored locally in the extension's IndexedDB. No analytics, telemetry, ads, or third-party tracking scripts are included.
+### Load unpacked in Brave Browser
 
----
-
-## Installing in Brave (Unpacked Extension)
-
-1. Build the extension (or unzip `release/bonjorno-extension.zip` to a permanent folder):
+1. Clone the repository and build the extension (or extract `release/bonjorno-extension.zip` to a permanent folder):
    ```bash
+   git clone https://github.com/projectGloria/Bonjorno.git
+   cd Bonjorno
    npm install
    npm run build
    ```
-2. Open Brave and navigate to **`brave://extensions`**.
-3. Enable **Developer mode** using the toggle in the top-right corner.
-4. Click **Load unpacked**.
-5. Select the **`dist/`** directory from this project (or the extracted ZIP folder).
-6. Open a new tab (`Ctrl+T` / `Cmd+T`) to launch **Bonjorno**.
+2. Open Brave Browser and go to `brave://extensions`.
+3. Enable **Developer mode** in the top-right corner.
+4. Click **Load unpacked** and select the `dist/` directory (or the extracted ZIP folder).
+5. Open a new tab (`Ctrl+T` / `Cmd+T`) to launch Bonjorno.
 
----
+## Usage
 
-## Development, Testing & Packaging
+### Keyboard shortcuts
 
-### Requirements
-- Node.js 20+ and npm
+| Shortcut | Action |
+| --- | --- |
+| `/` | Focus the search bar from anywhere on the page |
+| `,` | Open or close the **Customize** drawer |
+| `Escape` | Clear search input, close drawers, or exit **Edit Mode** |
+
+### Syncing settings with `bonjorno.config.json`
+
+To keep your shortcuts, theme, layout, tasks, and notes portable across machines:
+
+- **In Brave (installed extension)**: Open **Customize → Privacy & Data → Local Repo Sync**, click **Link `bonjorno.config.json`**, and select the file in your repo root. Subsequent edits auto-save directly to disk via the File System Access API.
+- **In dev mode (`npm run dev`)**: Changes automatically save to `bonjorno.config.json` through the local Vite middleware (`/__bonjorno/config`).
+- **On a new machine**: Running `npm run build` bundles `bonjorno.config.json` into `dist/bonjorno.config.json`, which Bonjorno loads automatically on first launch or whenever the file timestamp is newer than local storage.
+
+## Building from source
+
+### Prerequisites
+
+- **Node.js 20+** and **npm**
 
 ### Commands
-```bash
-# Install dependencies
-npm install
 
-# Run development server (for rapid UI iteration)
-npm run dev
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Run the local dev server:
+   ```bash
+   npm run dev
+   ```
+3. Run the Vitest unit test suite:
+   ```bash
+   npm test
+   ```
+4. Generate PNG icons, type-check, and build the production extension into `dist/`:
+   ```bash
+   npm run build
+   ```
+5. Build and package a distributable ZIP at `release/bonjorno-extension.zip`:
+   ```bash
+   npm run package
+   ```
 
-# Run unit tests
-npm test
+## Permissions
 
-# Type-check, generate PNG icons, and build production extension into dist/
-npm run build
+Bonjorno follows the principle of least privilege. No analytics, telemetry, ads, or external tracking scripts are included.
 
-# Build and package installable ZIP at release/bonjorno-extension.zip
-npm run package
-```
+| Permission | Type | Purpose |
+| --- | --- | --- |
+| `storage` | Required | Persists settings, quick links, tasks, notes, and weather cache in `chrome.storage.local`. |
+| `favicon` | Required | Reads locally cached site favicons via Chromium's `/_favicon/` API without external requests. |
+| `bookmarks` | Optional | Requested only when you enable the **Bookmarks** drawer to browse and search Brave bookmarks locally. |
+| `topSites` | Optional | Requested only when you enable **Most Visited Sites** to display frequently visited pages locally. |
 
----
-
-## Project Structure
+<details>
+<summary>Project structure</summary>
 
 ```text
 Bonjorno/
 ├── public/
-│   ├── manifest.json           # Manifest V3 configuration
-│   └── icons/                  # Generated 16/32/48/128 PNG extension icons
+│   ├── manifest.json           # Manifest V3 extension manifest
+│   └── icons/                  # Generated 16/32/48/128 PNG icons
 ├── scripts/
 │   ├── generate-icons.mjs      # Pure-Node PNG icon generator
 │   └── package-zip.mjs         # Packages dist/ into release/bonjorno-extension.zip
 ├── src/
-│   ├── components/             # Dashboard, widgets, bookmarks & settings UI
-│   ├── constants/              # Defaults, search engines, wallpapers
-│   ├── hooks/                  # Reactive settings & drift-free clock hooks
-│   ├── services/               # chromeApi wrapper, settingsStorage, imageStore, weather
-│   ├── styles/                 # Design tokens, base styles, component styles
+│   ├── components/             # Dashboard sections, drawers, and widgets
+│   ├── constants/              # Defaults, search engines, gradients, and SVG scenes
+│   ├── hooks/                  # Reactive settings and drift-free clock hooks
+│   ├── services/               # chromeApi, settingsStorage, localConfigSync, imageStore, weather
+│   ├── styles/                 # Design tokens, global styles, component styles
 │   ├── types/                  # Strict TypeScript interfaces
-│   └── utils/                  # URL validation/search builders & time formatting
-├── tests/                      # Vitest unit tests
-├── dist/                       # Production build ready to load in Brave
+│   └── utils/                  # URL validation/search builders and time formatting
+├── tests/                      # Vitest unit tests (settingsStorage, time, url)
+├── bonjorno.config.json        # Portable local configuration file
+├── dist/                       # Production extension output
 └── release/                    # Packaged bonjorno-extension.zip
 ```
+
+</details>
+
+## Contributing
+
+Contributions are welcome. Before opening a pull request on [projectGloria/Bonjorno](https://github.com/projectGloria/Bonjorno):
+
+1. Run `npm test` and ensure all unit tests pass.
+2. Run `npm run build` to verify TypeScript type-checking and the production extension bundle.
+3. Avoid committing personal shortcuts or names in `bonjorno.config.json`.
+
+## License
+
+<!-- TODO: add a LICENSE file to the repository and update this section. -->
+No license file is currently included in this repository.
