@@ -1964,6 +1964,224 @@
   transition: opacity var(--duration-fast), box-shadow var(--duration-fast);
 }
 
+/* Mini music player */
+.music-player {
+  position: fixed;
+  left: 16px;
+  bottom: 66px;
+  z-index: 11;
+  box-sizing: border-box;
+  width: min(330px, calc(100vw - 24px));
+  max-height: calc(100dvh - 78px);
+  overflow: auto;
+  display: grid;
+  gap: 9px;
+  padding: 11px 13px;
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+:root[data-theme="dark"] .music-player {
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] .music-player {
+  color-scheme: light;
+}
+
+.music-player.is-free-placed {
+  bottom: auto;
+  max-height: 100dvh;
+}
+
+.music-header,
+.music-track,
+.music-transport,
+.music-timeline,
+.music-volume,
+.music-library-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.music-header {
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.music-header > span:first-child {
+  flex: 1;
+}
+
+.music-track {
+  gap: 9px;
+}
+
+.music-artwork {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  background-color: color-mix(in srgb, var(--accent) 13%, transparent);
+}
+
+.music-artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.music-playing-indicator {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  display: flex;
+  align-items: end;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 3px;
+  background-color: rgb(0 0 0 / 75%);
+  color: white;
+}
+
+.music-playing-indicator > span {
+  width: 2px;
+  height: 9px;
+  border-radius: 1px;
+  background-color: currentColor;
+  transform: scaleY(0.6);
+  transform-origin: bottom;
+}
+
+.music-playing-indicator > span:nth-child(2) {
+  transform: scaleY(1);
+}
+
+.music-playing-indicator > span:nth-child(3) {
+  transform: scaleY(0.4);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-motion="enabled"] .music-playing-indicator > span {
+    animation: music-playing-bar 420ms ease-in-out infinite alternate;
+  }
+
+  :root[data-motion="enabled"] .music-playing-indicator > span:nth-child(2) {
+    animation-delay: -280ms;
+  }
+
+  :root[data-motion="enabled"] .music-playing-indicator > span:nth-child(3) {
+    animation-delay: -560ms;
+  }
+}
+
+@keyframes music-playing-bar {
+  from { transform: scaleY(0.3); }
+  to { transform: scaleY(1); }
+}
+
+.music-empty-artwork {
+  display: none;
+}
+
+@media (hover: hover) {
+  .music-player:not(:hover, :focus-visible, :has(:focus-visible), .is-dragging) {
+    background-color: transparent;
+    border-color: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+
+    :is(.music-header, .music-transport, .music-timeline, .music-volume, .music-status, .music-library) {
+      display: none;
+    }
+
+    .music-empty-artwork {
+      display: grid;
+    }
+  }
+}
+
+.music-track-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.music-title,
+.music-artist {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.music-title {
+  font-weight: 600;
+}
+
+.music-artist,
+.music-status,
+.music-timeline,
+.music-volume {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.music-status {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.music-transport {
+  gap: 2px;
+}
+
+.music-play-button {
+  color: var(--accent);
+}
+
+.music-timeline {
+  font-variant-numeric: tabular-nums;
+}
+
+.music-player input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.music-volume input {
+  max-width: 116px;
+}
+
+.music-library {
+  display: grid;
+  gap: 7px;
+}
+
+.music-library select {
+  width: 100%;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  background-color: rgb(var(--surface-rgb));
+}
+
+.music-library-actions {
+  flex-wrap: wrap;
+}
+
 .topbar-pill-slot.is-editable-pill {
   position: relative;
   outline: 1px dashed var(--border-strong);

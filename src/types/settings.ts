@@ -95,6 +95,7 @@ export interface VisibilitySettings {
   topSites: boolean;
   todo: boolean;
   notes: boolean;
+  musicPlayer: boolean;
 }
 
 export interface AppearanceSettings {

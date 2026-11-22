@@ -250,6 +250,7 @@ const STATIC_FREE_IDS = new Set<string>([
   ...VALID_HERO_PARTS.map((id) => `hero:${id}`),
   ...VALID_WIDGETS.map((id) => `widget:${id}`),
   'cluster:topSites',
+  'widget:musicPlayer',
 ]);
 
 function isKnownFreeId(key: string, quickLinkIds: Set<string>): boolean {
@@ -543,6 +544,10 @@ export function sanitizeSettings(raw: unknown): ExtensionSettings {
       topSites: pickBoolean(rawVis.topSites, DEFAULT_SETTINGS.visibility.topSites),
       todo: pickBoolean(rawVis.todo, DEFAULT_SETTINGS.visibility.todo),
       notes: pickBoolean(rawVis.notes, DEFAULT_SETTINGS.visibility.notes),
+      musicPlayer: pickBoolean(
+        rawVis.musicPlayer,
+        DEFAULT_SETTINGS.visibility.musicPlayer
+      ),
     },
     weather: {
       enabled: pickBoolean(rawWeather.enabled, DEFAULT_SETTINGS.weather.enabled),

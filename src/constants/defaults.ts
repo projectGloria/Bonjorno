@@ -169,6 +169,7 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
     topSites: false,
     todo: false,
     notes: false,
+    musicPlayer: false,
   },
   weather: {
     enabled: false,

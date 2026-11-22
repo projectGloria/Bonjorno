@@ -637,6 +637,7 @@ export function SettingsDrawer({
                       ['topSites', 'Most Visited Sites (Optional Permission)'],
                       ['todo', 'Tasks List Widget'],
                       ['notes', 'Notes Scratchpad Widget'],
+                      ['musicPlayer', 'Music Player'],
                     ] as [keyof ExtensionSettings['visibility'], string][]
                   ).map(([key, label]) => (
                     <label key={key} className="toggle-row">

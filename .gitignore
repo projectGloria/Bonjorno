@@ -4,3 +4,5 @@ release/
 .vite/
 *.local
 .DS_Store
+/Music/
+/bonjorno.music.local.json

@@ -100,6 +100,14 @@ function bonjornoRootConfigPlugin(): Plugin {
 export default defineConfig({
   plugins: [react(), bonjornoRootConfigPlugin()],
   base: './',
+  server: {
+    fs: {
+      deny: ['.env', '.env.*', '*.{crt,pem}', '**/.git/**', '**/Music/**', '**/bonjorno.music.local.json'],
+    },
+    watch: {
+      ignored: ['**/Music/**', '**/bonjorno.music.local.json'],
+    },
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,

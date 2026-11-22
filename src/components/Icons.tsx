@@ -14,6 +14,42 @@ const base = (size: number): SVGProps<SVGSVGElement> => ({
   'aria-hidden': true,
 });
 
+export function MusicNoteIcon({ size = 16, ...props }: IconProps) {
+  return (
+    <svg {...base(size)} {...props}>
+      <path d="M9 18V5l12-2v13M9 9l12-2" />
+      <ellipse cx="6" cy="18" rx="3" ry="2" />
+      <ellipse cx="18" cy="16" rx="3" ry="2" />
+    </svg>
+  );
+}
+
+export function PlayIcon({ size = 16, ...props }: IconProps) {
+  return (
+    <svg {...base(size)} {...props}>
+      <path d="m8 5 12 7-12 7z" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function PauseIcon({ size = 16, ...props }: IconProps) {
+  return (
+    <svg {...base(size)} {...props}>
+      <path d="M9 5v14m6-14v14" strokeWidth="3" />
+    </svg>
+  );
+}
+
+export function SkipTrackIcon({ size = 15, previous = false, ...props }: IconProps & {
+  previous?: boolean;
+}) {
+  return (
+    <svg {...base(size)} {...props}>
+      <path d={previous ? 'M6 5v14m12-14L7 12l11 7z' : 'M18 5v14M6 5l11 7-11 7z'} />
+    </svg>
+  );
+}
+
 export function SearchIcon({ size = 18, ...props }: IconProps) {
   return (
     <svg {...base(size)} {...props}>

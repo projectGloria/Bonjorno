@@ -41,6 +41,23 @@ describe('Settings sanitization and import/export', () => {
     expect(result.layout.quickLinkColumns).toBe(8);
     expect(result.quickLinks).toHaveLength(1);
     expect(result.quickLinks[0].url).toBe('https://brave.com/');
+    expect(result.visibility.musicPlayer).toBe(false);
+  });
+
+  it('preserves music player visibility and placement through settings exports', () => {
+    const position = { x: 88, y: 42, anchor: 'center' } as const;
+    const settings = sanitizeSettings({
+      layout: { freePositions: { 'widget:musicPlayer': position } },
+      visibility: { musicPlayer: true },
+    });
+    const result = parseImportJson(JSON.stringify(createExportPayload(settings)));
+    expect(result).toMatchObject({
+      ok: true,
+      settings: {
+        visibility: { musicPlayer: true },
+        layout: { freePositions: { 'widget:musicPlayer': position } },
+      },
+    });
   });
 
   it('round-trips export and import JSON cleanly', () => {

@@ -16,6 +16,7 @@ import {
   SettingsIcon,
 } from './components/Icons';
 import { QuickLinks } from './components/QuickLinks';
+import { MusicPlayer } from './components/MusicPlayer';
 import { SearchBar } from './components/SearchBar';
 import { SettingsDrawer } from './components/SettingsDrawer';
 import { TopSitesBar } from './components/TopSitesBar';
@@ -1061,6 +1062,18 @@ export function App() {
           ))}
         </div>
       </main>
+
+      {loaded && settings.visibility.musicPlayer && (
+        <MusicPlayer
+          editMode={editMode}
+          layout={settings.layout}
+          onSetPosition={setFreePosition}
+          onClose={() => updateSettings((prev) => ({
+            ...prev,
+            visibility: { ...prev.visibility, musicPlayer: false },
+          }))}
+        />
+      )}
 
       {(editMode ||
         settings.layout.topbarCorners['bottom-left'].some(isPillVisible) ||
