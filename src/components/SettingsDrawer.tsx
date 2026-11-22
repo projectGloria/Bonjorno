@@ -803,6 +803,48 @@ export function SettingsDrawer({
                   </label>
                 )}
               </div>
+
+              <div className="settings-group">
+                <h3>Free-Form Canvas &amp; Corners</h3>
+                <label className="toggle-row">
+                  <span>Snap free-placed items to alignment grid</span>
+                  <input
+                    type="checkbox"
+                    className="toggle-switch"
+                    checked={layout.snapToGrid}
+                    onChange={(e) =>
+                      setLayout({ snapToGrid: e.target.checked })
+                    }
+                  />
+                </label>
+                <div className="data-actions-row mt-sm">
+                  <button
+                    type="button"
+                    className="btn-secondary btn-sm"
+                    disabled={Object.keys(layout.freePositions).length === 0}
+                    onClick={() => setLayout({ freePositions: {} })}
+                  >
+                    Dock Free Items ({Object.keys(layout.freePositions).length})
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-sm"
+                    onClick={() =>
+                      setLayout({
+                        topbarCorners: structuredClone(
+                          DEFAULT_SETTINGS.layout.topbarCorners
+                        ),
+                        heroOrder: [...DEFAULT_SETTINGS.layout.heroOrder],
+                        linksClusterOrder: [
+                          ...DEFAULT_SETTINGS.layout.linksClusterOrder,
+                        ],
+                      })
+                    }
+                  >
+                    Reset Slots &amp; Corners
+                  </button>
+                </div>
+              </div>
             </>
           )}
 

@@ -8,6 +8,27 @@
   text-align: center;
   user-select: none;
   gap: 8px;
+  width: 100%;
+}
+
+.hero-parts-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.greeting-style-inline .hero-parts-list {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.greeting-style-inline .hero-part-clock {
+  flex-basis: 100%;
 }
 
 .clock-display {
@@ -651,6 +672,12 @@
 }
 
 .widget-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.widget-header-right {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1647,8 +1674,8 @@
 }
 
 .dashboard-section-slot.is-editable-section {
-  padding: 14px 16px 16px;
-  border: 1px dashed var(--border-strong);
+  outline: 1px dashed var(--border-strong);
+  outline-offset: 6px;
   background-color: rgba(var(--surface-rgb), 0.22);
   cursor: grab;
 }
@@ -1662,20 +1689,33 @@
 }
 
 .dashboard-section-slot.is-section-drag-over {
-  border-color: var(--accent);
+  outline-color: var(--accent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 32%, transparent);
   background-color: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .section-edit-bar {
-  width: 100%;
+  /* Overlay above the section so edit mode never changes the layout. */
+  /* Sits on the section's top outline like a fieldset legend. */
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: -18px;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border-subtle);
+  pointer-events: none;
+}
+
+.section-edit-label,
+.section-edit-controls {
+  pointer-events: auto;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background-color: rgba(var(--popover-rgb), 0.92);
+  border: 1px solid var(--border-subtle);
 }
 
 .section-edit-label {
@@ -1696,29 +1736,16 @@
   gap: 3px;
 }
 
-.inline-greeting-input {
-  background-color: var(--input-bg);
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-sm);
-  padding: 4px 12px;
-  font-size: 15px;
-  text-align: center;
-  color: var(--text-primary);
-  min-width: 210px;
-}
-
-.inline-greeting-input:focus {
-  outline: none;
-  border-style: solid;
-  border-color: var(--accent);
-}
-
 .inline-edit-chips {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
   gap: 6px;
-  margin-top: 6px;
 }
 
 .mini-chip-btn {
@@ -1781,3 +1808,479 @@
   cursor: grab;
 }
 
+/* ==========================================================================
+   Universal Slot Reordering & Free-Form 2D Canvas Placement
+   ========================================================================== */
+.app-shell.show-snap-grid::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.16) 1px,
+    transparent 1px
+  );
+  background-size: 2vw 2vh;
+}
+
+:root[data-theme="light"] .app-shell.show-snap-grid::before {
+  background-image: radial-gradient(
+    rgba(15, 23, 42, 0.16) 1px,
+    transparent 1px
+  );
+}
+
+.edit-mode-banner {
+  user-select: none;
+  /* Floats over the page so entering edit mode does not push content down. */
+  position: fixed;
+  left: 50%;
+  bottom: 78px;
+  transform: translateX(-50%);
+  z-index: 50;
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  max-width: calc(100% - 32px);
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.edit-banner-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edit-banner-info strong {
+  color: var(--text-primary);
+}
+
+.edit-banner-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
+  flex-shrink: 0;
+}
+
+.edit-banner-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mini-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.mini-chip-btn.is-chip-active {
+  border-color: var(--accent);
+  color: var(--text-primary);
+  background-color: color-mix(in srgb, var(--accent) 18%, rgba(var(--surface-rgb), 0.85));
+}
+
+.mini-chip-btn.is-chip-primary {
+  border-color: var(--accent);
+  background-color: var(--accent);
+  color: #ffffff;
+}
+
+.mini-chip-btn.is-chip-primary:hover {
+  opacity: 0.92;
+  color: #ffffff;
+}
+
+/* Corner Drop Zones (Top & Bottom Bars) */
+.bottombar {
+  /* Out of flow so showing it (always in edit mode) never resizes the
+     dashboard and shifts its content. */
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 26px 20px;
+}
+
+.corner-zone {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 36px;
+  border-radius: var(--radius-pill);
+  transition: border-color var(--duration-fast), background-color var(--duration-fast),
+    box-shadow var(--duration-fast);
+}
+
+.corner-zone.corner-top-right,
+.corner-zone.corner-bottom-right {
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.corner-zone.is-editable-corner {
+  position: relative;
+  min-width: 140px;
+  outline: 1px dashed var(--border-strong);
+  outline-offset: 5px;
+  background-color: rgba(var(--surface-rgb), 0.22);
+}
+
+.corner-zone.is-corner-drag-over {
+  outline-color: var(--accent);
+  background-color: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.corner-placeholder-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 0 6px;
+  user-select: none;
+}
+
+/* Draggable Topbar Pill Slot */
+.topbar-pill-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-pill);
+  transition: opacity var(--duration-fast), box-shadow var(--duration-fast);
+}
+
+.topbar-pill-slot.is-editable-pill {
+  position: relative;
+  outline: 1px dashed var(--border-strong);
+  outline-offset: 3px;
+  cursor: grab;
+}
+
+.topbar-pill-slot.is-drag-over {
+  outline-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+.topbar-pill-slot.is-dragging {
+  opacity: 0.45;
+}
+
+.pill-edit-badge {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  white-space: nowrap;
+  padding: 2px 4px;
+  border-radius: var(--radius-pill);
+  background-color: rgba(var(--popover-rgb), 0.9);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.pill-drag-grip {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  cursor: grab;
+}
+
+/* Individual Hero Parts & Cluster Parts */
+.hero-part-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-md);
+  transition: border-color var(--duration-fast), background-color var(--duration-fast),
+    box-shadow var(--duration-fast), opacity var(--duration-fast);
+}
+
+.hero-part-slot.is-editable-part,
+.topsites-section.is-editable-part {
+  outline: 1px dashed var(--border-strong);
+  outline-offset: 4px;
+  background-color: rgba(var(--surface-rgb), 0.18);
+  cursor: grab;
+}
+
+.hero-part-slot.is-drag-over,
+.cluster-part-slot.is-drag-over {
+  outline: 1px solid var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: var(--radius-md);
+}
+
+.hero-part-slot.is-dragging,
+.cluster-part-slot.is-dragging,
+.topsites-section.is-dragging {
+  opacity: 0.45;
+}
+
+.cluster-part-slot {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.part-mini-toolbar {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background-color: rgba(var(--popover-rgb), 0.78);
+  border: 1px solid var(--border-subtle);
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.part-mini-grip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: grab;
+}
+
+/* Free Move Controls Badge */
+.free-move-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.free-move-handle,
+.free-dock-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background-color: rgba(var(--surface-rgb), 0.75);
+  border: 1px solid var(--border-subtle);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  transition: color var(--duration-fast), border-color var(--duration-fast),
+    background-color var(--duration-fast);
+}
+
+.free-move-controls.is-compact .free-move-handle,
+.free-move-controls.is-compact .free-dock-btn {
+  height: 20px;
+  padding: 0 5px;
+}
+
+.free-move-handle:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+  background-color: color-mix(in srgb, var(--accent) 18%, rgba(var(--surface-rgb), 0.9));
+}
+
+.free-move-handle:active {
+  cursor: grabbing;
+}
+
+.free-dock-btn {
+  cursor: pointer;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.free-dock-btn:hover {
+  background-color: var(--accent);
+  color: #ffffff;
+}
+
+/* Free-placed items floating on 2D canvas */
+.is-free-placed {
+  --free-layout-width: initial;
+}
+
+.topbar-pill-slot.is-free-placed,
+.hero-part-slot.is-free-placed {
+  width: max-content;
+}
+
+.dashboard-section-slot.is-free-placed {
+  --free-layout-width: 740px;
+  width: min(var(--free-layout-width), 92vw);
+}
+
+.widget-card.is-free-placed {
+  --free-layout-width: 420px;
+  width: min(var(--free-layout-width), 90vw);
+}
+
+.quicklink-item.is-free-placed {
+  width: 148px;
+}
+
+.topsites-section.is-free-placed {
+  --free-layout-width: 620px;
+  width: min(var(--free-layout-width), 92vw);
+}
+
+.is-edit-mode .is-free-placed {
+  box-shadow: 0 0 0 1.5px var(--accent), var(--shadow-popover);
+}
+
+/* Edit chrome is absolutely positioned, so its owners need a containing
+   block. Free-placed items keep their inline position: fixed. */
+.is-edit-mode .dashboard-section-slot,
+.is-edit-mode .hero-part-slot,
+.is-edit-mode .topsites-section,
+.hero-block.is-edit-mode {
+  position: relative;
+}
+
+/* Bottom-corner pills show their badge above instead of below. */
+.bottombar .pill-edit-badge {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
+.corner-placeholder-hint {
+  white-space: nowrap;
+}
+
+.bottombar .corner-zone {
+  pointer-events: auto;
+}
+
+/* Name editor floats beside the greeting; the greeting text itself stays
+   rendered so its box is identical in and out of edit mode. */
+.hero-part-greeting {
+  position: relative;
+}
+
+.inline-greeting-input {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 30;
+  width: 150px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 13px;
+  text-align: left;
+}
+
+.inline-greeting-input:focus {
+  outline: none;
+  border-style: solid;
+  border-color: var(--accent);
+}
+
+.edit-toggle-label {
+  display: inline-grid;
+}
+
+.edit-toggle-label > span {
+  grid-area: 1 / 1;
+}
+
+.edit-toggle-label > .is-hidden {
+  visibility: hidden;
+}
+
+/* The hero parts are packed tightly, so their overlays appear only for the
+   part under the pointer (or with keyboard focus inside it). */
+.hero-part-slot > .part-mini-toolbar,
+.hero-part-slot > .inline-greeting-input,
+.hero-block > .inline-edit-chips {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.hero-part-slot:hover > .part-mini-toolbar,
+.hero-part-slot:focus-within > .part-mini-toolbar,
+.hero-part-slot:hover > .inline-greeting-input,
+.hero-part-slot:focus-within > .inline-greeting-input,
+.hero-block:hover > .inline-edit-chips,
+.hero-block:focus-within > .inline-edit-chips {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Body drag: in edit mode, grab any element to move it ── */
+.is-edit-mode .dashboard-section-slot,
+.is-edit-mode .hero-part-slot,
+.is-edit-mode .topbar-pill-slot,
+.is-edit-mode .quicklink-item,
+.is-edit-mode .quicklink-anchor,
+.is-edit-mode .widget-card,
+.is-edit-mode .topsites-section,
+.is-edit-mode .topsite-chip {
+  cursor: grab;
+  user-select: none;
+}
+
+.is-edit-mode a,
+.is-edit-mode img {
+  -webkit-user-drag: none;
+}
+
+.is-edit-mode [data-reorder-grip] {
+  cursor: grab;
+}
+
+.is-edit-mode .search-input {
+  pointer-events: none;
+}
+
+.is-edit-mode button,
+.is-edit-mode input,
+.is-edit-mode textarea,
+.is-edit-mode select {
+  cursor: pointer;
+}
+
+.is-edit-mode input[type='text'],
+.is-edit-mode textarea {
+  cursor: text;
+}
+
+html.is-free-dragging,
+html.is-free-dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}

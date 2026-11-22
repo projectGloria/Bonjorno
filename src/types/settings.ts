@@ -25,6 +25,20 @@ export type DashboardSectionId = 'hero' | 'search' | 'quickLinks' | 'widgets';
 
 export type WidgetId = 'todo' | 'notes';
 
+export type TopbarPillId = 'bookmarks' | 'weather' | 'sync' | 'edit' | 'settings';
+
+export type TopbarCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+
+export type HeroPartId = 'clock' | 'greeting' | 'date';
+
+export type LinksClusterPartId = 'quickLinks' | 'topSites';
+
+export interface FreePosition {
+  x: number; // percentage of viewport width
+  y: number; // percentage of viewport height to the top edge
+  anchor?: 'center'; // horizontal anchor; older positions use the left edge
+}
+
 export type BuiltinSearchEngineId =
   | 'brave'
   | 'duckduckgo'
@@ -102,6 +116,11 @@ export interface AppearanceSettings {
 export interface LayoutSettings {
   sectionOrder: DashboardSectionId[];
   widgetOrder: WidgetId[];
+  heroOrder: HeroPartId[];
+  linksClusterOrder: LinksClusterPartId[];
+  topbarCorners: Record<TopbarCorner, TopbarPillId[]>;
+  freePositions: Record<string, FreePosition>;
+  snapToGrid: boolean;
   density: DensityMode;
   clockStyle: ClockStyle;
   greetingStyle: GreetingStyle;

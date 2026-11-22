@@ -130,6 +130,16 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   layout: {
     sectionOrder: ['hero', 'search', 'quickLinks', 'widgets'],
     widgetOrder: ['todo', 'notes'],
+    heroOrder: ['clock', 'greeting', 'date'],
+    linksClusterOrder: ['quickLinks', 'topSites'],
+    topbarCorners: {
+      'top-left': ['bookmarks', 'weather'],
+      'top-right': ['sync', 'edit', 'settings'],
+      'bottom-left': [],
+      'bottom-right': [],
+    },
+    freePositions: {},
+    snapToGrid: true,
     density: 'comfortable',
     clockStyle: 'editorial',
     greetingStyle: 'subtle',

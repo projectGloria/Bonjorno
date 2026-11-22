@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   getTopSites,
   hasOptionalPermission,
@@ -6,18 +6,45 @@ import {
   requestOptionalPermission,
   type TopSiteEntry,
 } from '../services/chromeApi';
+import type { FreePosition, LayoutSettings } from '../types/settings';
 import { extractDomainLabel } from '../utils/url';
 import { FaviconBadge } from './FaviconBadge';
-import { ShieldIcon } from './Icons';
+import { FreeMoveBadge, useFreeDrag } from './FreeMoveSlot';
+import { GripIcon, ShieldIcon } from './Icons';
 
 interface TopSitesBarProps {
   openInNewTab: boolean;
+  editMode?: boolean;
+  layout?: LayoutSettings;
+  onSetFreePosition?: (itemId: string, pos: FreePosition | null) => void;
 }
 
-export function TopSitesBar({ openInNewTab }: TopSitesBarProps) {
+export function TopSitesBar({
+  openInNewTab,
+  editMode = false,
+  layout,
+  onSetFreePosition,
+}: TopSitesBarProps) {
   const [sites, setSites] = useState<TopSiteEntry[]>([]);
   const [permitted, setPermitted] = useState<boolean | null>(null);
   const [deniedMsg, setDeniedMsg] = useState<string | null>(null);
+  const ref = useRef<HTMLElement>(null);
+
+  const {
+    isFree,
+    isFreeDragging,
+    activePos,
+    freeStyle,
+    startPointerDrag,
+    bodyPointerDown,
+    dockItem,
+  } = useFreeDrag({
+    itemId: 'cluster:topSites',
+    targetRef: permitted === null ? undefined : ref,
+    freePositions: layout?.freePositions ?? {},
+    snapToGrid: layout?.snapToGrid ?? true,
+    onSetPosition: onSetFreePosition ?? (() => {}),
+  });
 
   const load = async () => {
     const ok = await hasOptionalPermission('topSites');
@@ -48,9 +75,41 @@ export function TopSitesBar({ openInNewTab }: TopSitesBarProps) {
 
   if (permitted === null) return null;
 
+  const bodyDown = editMode
+    ? (e: React.PointerEvent) => bodyPointerDown(e, ref.current)
+    : undefined;
+
+  const sectionClass = `topsites-section ${
+    editMode ? 'is-editable-part' : ''
+  } ${isFreeDragging ? 'is-dragging' : ''} ${isFree ? 'is-free-placed' : ''}`;
+
+  const editHeader = editMode ? (
+    <div className="part-mini-toolbar">
+      <span data-reorder-grip className="part-mini-grip" title="Drag to swap with Quick Links">
+        <GripIcon size={11} />
+        <span>Most Visited</span>
+      </span>
+      <FreeMoveBadge
+        label="Most Visited Sites"
+        isFree={isFree}
+        activePos={activePos}
+        onStartFreeDrag={(e) => startPointerDrag(e, ref.current)}
+        onDock={dockItem}
+        compact
+      />
+    </div>
+  ) : null;
+
   if (!permitted) {
     return (
-      <section className="topsites-section" aria-label="Frequently visited sites">
+      <section
+        ref={ref}
+        style={freeStyle}
+        className={sectionClass}
+        onPointerDown={bodyDown}
+        aria-label="Frequently visited sites"
+      >
+        {editHeader}
         <div className="permission-banner surface-card">
           <div className="permission-banner-copy">
             <ShieldIcon size={16} />
@@ -69,7 +128,14 @@ export function TopSitesBar({ openInNewTab }: TopSitesBarProps) {
 
   if (sites.length === 0) {
     return (
-      <section className="topsites-section" aria-label="Frequently visited sites">
+      <section
+        ref={ref}
+        style={freeStyle}
+        className={sectionClass}
+        onPointerDown={bodyDown}
+        aria-label="Frequently visited sites"
+      >
+        {editHeader}
         <p className="subtle-notice">No frequently visited sites recorded yet.</p>
       </section>
     );
@@ -80,7 +146,14 @@ export function TopSitesBar({ openInNewTab }: TopSitesBarProps) {
     : {};
 
   return (
-    <section className="topsites-section" aria-label="Frequently visited sites">
+    <section
+      ref={ref}
+      style={freeStyle}
+      className={sectionClass}
+      onPointerDown={bodyDown}
+      aria-label="Frequently visited sites"
+    >
+      {editHeader}
       <div className="section-mini-header">
         <span className="section-mini-label">Most Visited</span>
       </div>

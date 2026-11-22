@@ -10,11 +10,16 @@ import type {
   DensityMode,
   ExportPayload,
   ExtensionSettings,
+  FreePosition,
   GreetingStyle,
+  HeroPartId,
+  LinksClusterPartId,
   QuickLink,
   QuickLinkLayout,
   ThemeMode,
   TodoItem,
+  TopbarCorner,
+  TopbarPillId,
   WidgetId,
 } from '../types/settings';
 import { normalizeAndValidateUrl } from '../utils/url';
@@ -46,6 +51,21 @@ const VALID_SECTIONS: DashboardSectionId[] = [
   'widgets',
 ];
 const VALID_WIDGETS: WidgetId[] = ['todo', 'notes'];
+const VALID_HERO_PARTS: HeroPartId[] = ['clock', 'greeting', 'date'];
+const VALID_LINKS_PARTS: LinksClusterPartId[] = ['quickLinks', 'topSites'];
+const VALID_CORNERS: TopbarCorner[] = [
+  'top-left',
+  'top-right',
+  'bottom-left',
+  'bottom-right',
+];
+const VALID_PILLS: TopbarPillId[] = [
+  'bookmarks',
+  'weather',
+  'sync',
+  'edit',
+  'settings',
+];
 const VALID_ENGINES: BuiltinSearchEngineId[] = [
   'brave',
   'duckduckgo',
@@ -140,6 +160,141 @@ function sanitizeWidgetOrder(value: unknown): WidgetId[] {
   return result;
 }
 
+function sanitizeHeroOrder(value: unknown): HeroPartId[] {
+  if (!Array.isArray(value)) return [...DEFAULT_SETTINGS.layout.heroOrder];
+  const seen = new Set<HeroPartId>();
+  const result: HeroPartId[] = [];
+  for (const item of value) {
+    if (
+      typeof item === 'string' &&
+      VALID_HERO_PARTS.includes(item as HeroPartId) &&
+      !seen.has(item as HeroPartId)
+    ) {
+      seen.add(item as HeroPartId);
+      result.push(item as HeroPartId);
+    }
+  }
+  for (const required of VALID_HERO_PARTS) {
+    if (!seen.has(required)) result.push(required);
+  }
+  return result;
+}
+
+function sanitizeLinksClusterOrder(value: unknown): LinksClusterPartId[] {
+  if (!Array.isArray(value)) return [...DEFAULT_SETTINGS.layout.linksClusterOrder];
+  const seen = new Set<LinksClusterPartId>();
+  const result: LinksClusterPartId[] = [];
+  for (const item of value) {
+    if (
+      typeof item === 'string' &&
+      VALID_LINKS_PARTS.includes(item as LinksClusterPartId) &&
+      !seen.has(item as LinksClusterPartId)
+    ) {
+      seen.add(item as LinksClusterPartId);
+      result.push(item as LinksClusterPartId);
+    }
+  }
+  for (const required of VALID_LINKS_PARTS) {
+    if (!seen.has(required)) result.push(required);
+  }
+  return result;
+}
+
+function sanitizeTopbarCorners(
+  value: unknown
+): Record<TopbarCorner, TopbarPillId[]> {
+  if (!isRecord(value)) {
+    return structuredClone(DEFAULT_SETTINGS.layout.topbarCorners);
+  }
+  const seen = new Set<TopbarPillId>();
+  const result: Record<TopbarCorner, TopbarPillId[]> = {
+    'top-left': [],
+    'top-right': [],
+    'bottom-left': [],
+    'bottom-right': [],
+  };
+
+  for (const corner of VALID_CORNERS) {
+    const list = value[corner];
+    if (!Array.isArray(list)) continue;
+    for (const item of list) {
+      if (
+        typeof item === 'string' &&
+        VALID_PILLS.includes(item as TopbarPillId) &&
+        !seen.has(item as TopbarPillId)
+      ) {
+        seen.add(item as TopbarPillId);
+        result[corner].push(item as TopbarPillId);
+      }
+    }
+  }
+
+  for (const pill of VALID_PILLS) {
+    if (!seen.has(pill)) {
+      const defaultCorner =
+        pill === 'bookmarks' || pill === 'weather' ? 'top-left' : 'top-right';
+      result[defaultCorner].push(pill);
+    }
+  }
+
+  return result;
+}
+
+const FREE_POS_MAX = 96;
+const MAX_FREE_POSITIONS = 120;
+
+/** Element IDs that can be free-placed, apart from per-link `quicklink:<id>`. */
+const STATIC_FREE_IDS = new Set<string>([
+  ...VALID_SECTIONS.map((id) => `section:${id}`),
+  ...VALID_PILLS.map((id) => `pill:${id}`),
+  ...VALID_HERO_PARTS.map((id) => `hero:${id}`),
+  ...VALID_WIDGETS.map((id) => `widget:${id}`),
+  'cluster:topSites',
+]);
+
+function isKnownFreeId(key: string, quickLinkIds: Set<string>): boolean {
+  if (STATIC_FREE_IDS.has(key)) return true;
+  if (key.startsWith('quicklink:')) {
+    return quickLinkIds.has(key.slice('quicklink:'.length));
+  }
+  return false;
+}
+
+function clampFreeCoord(value: number, max = FREE_POS_MAX): number {
+  return Math.min(max, Math.max(0, Number(value.toFixed(2))));
+}
+
+/**
+ * Free-placed element positions, as percentages of the viewport. Preserve
+ * the optional horizontal center anchor and the limits for legacy positions.
+ */
+export function sanitizeFreePositions(
+  value: unknown,
+  quickLinkIds: Set<string>
+): Record<string, FreePosition> {
+  if (!isRecord(value)) return {};
+  const cleaned: Record<string, FreePosition> = {};
+  let count = 0;
+  for (const [key, pos] of Object.entries(value)) {
+    if (count >= MAX_FREE_POSITIONS) break;
+    if (!isKnownFreeId(key, quickLinkIds) || !isRecord(pos)) continue;
+    const { x, y } = pos;
+    if (
+      typeof x !== 'number' ||
+      typeof y !== 'number' ||
+      !Number.isFinite(x) ||
+      !Number.isFinite(y)
+    ) {
+      continue;
+    }
+    cleaned[key] = pos.anchor === 'center'
+      ? { x: clampFreeCoord(x, 100), y: clampFreeCoord(y), anchor: 'center' }
+      : { x: clampFreeCoord(x), y: clampFreeCoord(y) };
+    count++;
+  }
+  return cleaned;
+}
+
 function sanitizeQuickLinks(value: unknown): QuickLink[] {
   if (!Array.isArray(value)) return DEFAULT_SETTINGS.quickLinks.map((q) => ({ ...q }));
   const cleaned: QuickLink[] = [];
@@ -191,6 +346,8 @@ export function sanitizeSettings(raw: unknown): ExtensionSettings {
   const rawBehavior = isRecord(raw.behavior) ? raw.behavior : {};
   const rawVis = isRecord(raw.visibility) ? raw.visibility : {};
   const rawWeather = isRecord(raw.weather) ? raw.weather : {};
+  const quickLinks = sanitizeQuickLinks(raw.quickLinks);
+  const quickLinkIds = new Set(quickLinks.map((link) => link.id));
 
   const customImages = Array.isArray(rawApp.customImages)
     ? rawApp.customImages
@@ -288,6 +445,17 @@ export function sanitizeSettings(raw: unknown): ExtensionSettings {
     layout: {
       sectionOrder: sanitizeSectionOrder(rawLayout.sectionOrder),
       widgetOrder: sanitizeWidgetOrder(rawLayout.widgetOrder),
+      heroOrder: sanitizeHeroOrder(rawLayout.heroOrder),
+      linksClusterOrder: sanitizeLinksClusterOrder(rawLayout.linksClusterOrder),
+      topbarCorners: sanitizeTopbarCorners(rawLayout.topbarCorners),
+      freePositions: sanitizeFreePositions(
+        rawLayout.freePositions,
+        quickLinkIds
+      ),
+      snapToGrid: pickBoolean(
+        rawLayout.snapToGrid,
+        DEFAULT_SETTINGS.layout.snapToGrid
+      ),
       density: pickEnum(
         rawLayout.density,
         VALID_DENSITIES,
@@ -388,7 +556,7 @@ export function sanitizeSettings(raw: unknown): ExtensionSettings {
           : DEFAULT_SETTINGS.weather.unit,
       location: weatherLocation,
     },
-    quickLinks: sanitizeQuickLinks(raw.quickLinks),
+    quickLinks,
     todos: sanitizeTodos(raw.todos),
     notes: pickString(raw.notes, '', 12000),
   };

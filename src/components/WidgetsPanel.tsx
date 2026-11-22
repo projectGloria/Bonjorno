@@ -1,32 +1,149 @@
-import { useState } from 'react';
-import type { TodoItem, WidgetId } from '../types/settings';
+import { useRef, useState } from 'react';
+import type { FreePosition, LayoutSettings, TodoItem, WidgetId } from '../types/settings';
+import { FreeMoveBadge, useFreeDrag, useReorderArm } from './FreeMoveSlot';
 import { CheckIcon, GripIcon, PlusIcon, TrashIcon } from './Icons';
 
 interface WidgetsPanelProps {
   showTodo: boolean;
   showNotes: boolean;
   widgetOrder: WidgetId[];
+  layout: LayoutSettings;
   todos: TodoItem[];
   notes: string;
   editMode?: boolean;
   onChangeTodos: (next: TodoItem[]) => void;
   onChangeNotes: (next: string) => void;
   onReorderWidgets: (next: WidgetId[]) => void;
+  onSetFreePosition?: (itemId: string, pos: FreePosition | null) => void;
 }
 
 const WIDGET_MIME = 'application/x-bonjorno-widget';
 const TODO_MIME = 'application/x-bonjorno-todo';
 
+const WIDGET_LABELS: Record<WidgetId, string> = {
+  todo: 'Tasks Widget',
+  notes: 'Notes Widget',
+};
+
+function WidgetSlot({
+  id,
+  editMode,
+  layout,
+  draggedWidget,
+  dragOverWidget,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+  onSetFreePosition,
+  renderHeaderExtra,
+  children,
+}: {
+  id: WidgetId;
+  editMode: boolean;
+  layout: LayoutSettings;
+  draggedWidget: WidgetId | null;
+  dragOverWidget: WidgetId | null;
+  onDragStart: (id: WidgetId) => void;
+  onDragOver: (id: WidgetId) => void;
+  onDragLeave: (id: WidgetId) => void;
+  onDrop: (id: WidgetId) => void;
+  onDragEnd: () => void;
+  onSetFreePosition: (itemId: string, pos: FreePosition | null) => void;
+  renderHeaderExtra: (freeControls: React.ReactNode) => React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const itemId = `widget:${id}`;
+  const {
+    isFree,
+    isFreeDragging,
+    activePos,
+    freeStyle,
+    startPointerDrag,
+    bodyPointerDown,
+    dockItem,
+  } = useFreeDrag({
+    itemId,
+    targetRef: ref,
+    freePositions: layout.freePositions,
+    snapToGrid: layout.snapToGrid,
+    onSetPosition: onSetFreePosition,
+  });
+  const reorder = useReorderArm();
+
+  const cardClass = `widget-card surface-card ${
+    dragOverWidget === id ? 'is-drag-over' : ''
+  } ${draggedWidget === id || isFreeDragging ? 'is-dragging' : ''} ${
+    editMode ? 'is-editable-item' : ''
+  } ${isFree ? 'is-free-placed' : ''}`;
+
+  const freeBadge = editMode ? (
+    <FreeMoveBadge
+      label={WIDGET_LABELS[id]}
+      isFree={isFree}
+      activePos={activePos}
+      onStartFreeDrag={(e) => startPointerDrag(e, ref.current)}
+      onDock={dockItem}
+      compact
+    />
+  ) : null;
+
+  return (
+    <div
+      ref={ref}
+      style={freeStyle}
+      className={cardClass}
+      {...reorder}
+      onPointerDown={
+        editMode ? (e) => bodyPointerDown(e, ref.current) : undefined
+      }
+      onDragStart={(e) => {
+        e.stopPropagation();
+        e.dataTransfer.setData(WIDGET_MIME, id);
+        e.dataTransfer.effectAllowed = 'move';
+        onDragStart(id);
+      }}
+      onDragOver={(e) => {
+        if (!draggedWidget && !e.dataTransfer.types.includes(WIDGET_MIME)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onDragOver(id);
+      }}
+      onDragLeave={(e) => {
+        e.stopPropagation();
+        onDragLeave(id);
+      }}
+      onDrop={(e) => {
+        if (!draggedWidget && !e.dataTransfer.types.includes(WIDGET_MIME)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onDrop(id);
+      }}
+      onDragEnd={(e) => {
+        e.stopPropagation();
+        onDragEnd();
+      }}
+    >
+      {renderHeaderExtra(freeBadge)}
+      {children}
+    </div>
+  );
+}
+
 export function WidgetsPanel({
   showTodo,
   showNotes,
   widgetOrder,
+  layout,
   todos,
   notes,
   editMode = false,
   onChangeTodos,
   onChangeNotes,
   onReorderWidgets,
+  onSetFreePosition,
 }: WidgetsPanelProps) {
   const [newTask, setNewTask] = useState('');
   const [draggedWidget, setDraggedWidget] = useState<WidgetId | null>(null);
@@ -105,70 +222,67 @@ export function WidgetsPanel({
     setDragOverWidget(null);
   };
 
+  const handleSetFreePos = (itemId: string, pos: FreePosition | null) => {
+    if (onSetFreePosition) {
+      onSetFreePosition(itemId, pos);
+    }
+  };
+
   const visibleOrder = widgetOrder.filter((id) =>
     id === 'todo' ? showTodo : showNotes
   );
 
   const renderWidget = (id: WidgetId) => {
-    const widgetDragProps = {
-      draggable: true,
-      onDragStart: (e: React.DragEvent) => {
-        e.stopPropagation();
-        e.dataTransfer.setData(WIDGET_MIME, id);
-        e.dataTransfer.effectAllowed = 'move';
-        setDraggedWidget(id);
+    const slotProps = {
+      id,
+      editMode,
+      layout,
+      draggedWidget,
+      dragOverWidget,
+      onDragStart: (wId: WidgetId) => setDraggedWidget(wId),
+      onDragOver: (wId: WidgetId) => {
+        if (dragOverWidget !== wId) setDragOverWidget(wId);
       },
-      onDragOver: (e: React.DragEvent) => {
-        if (!draggedWidget && !e.dataTransfer.types.includes(WIDGET_MIME)) return;
-        e.preventDefault();
-        e.stopPropagation();
-        if (dragOverWidget !== id) setDragOverWidget(id);
+      onDragLeave: (wId: WidgetId) => {
+        if (dragOverWidget === wId) setDragOverWidget(null);
       },
-      onDragLeave: (e: React.DragEvent) => {
-        e.stopPropagation();
-        if (dragOverWidget === id) setDragOverWidget(null);
-      },
-      onDrop: (e: React.DragEvent) => {
-        if (!draggedWidget && !e.dataTransfer.types.includes(WIDGET_MIME)) return;
-        e.preventDefault();
-        e.stopPropagation();
-        handleWidgetDrop(id);
-      },
-      onDragEnd: (e: React.DragEvent) => {
-        e.stopPropagation();
+      onDrop: handleWidgetDrop,
+      onDragEnd: () => {
         setDraggedWidget(null);
         setDragOverWidget(null);
       },
+      onSetFreePosition: handleSetFreePos,
     };
-
-    const cardClass = `widget-card surface-card ${
-      dragOverWidget === id ? 'is-drag-over' : ''
-    } ${draggedWidget === id ? 'is-dragging' : ''} ${
-      editMode ? 'is-editable-item' : ''
-    }`;
 
     if (id === 'todo') {
       return (
-        <div key="todo" className={cardClass} {...widgetDragProps}>
-          <div className="widget-header">
-            <div className="widget-title-group">
-              <span className="drag-grip" title="Drag to swap widgets">
-                <GripIcon size={14} />
-              </span>
-              <h3>Tasks</h3>
-              <span className="widget-badge">{activeCount} left</span>
+        <WidgetSlot
+          key="todo"
+          {...slotProps}
+          renderHeaderExtra={(freeBadge) => (
+            <div className="widget-header">
+              <div className="widget-title-group">
+                <span data-reorder-grip className="drag-grip" title="Drag to swap widgets">
+                  <GripIcon size={14} />
+                </span>
+                <h3>Tasks</h3>
+                <span className="widget-badge">{activeCount} left</span>
+              </div>
+              <div className="widget-header-right">
+                {freeBadge}
+                {completedCount > 0 && (
+                  <button
+                    type="button"
+                    className="text-btn"
+                    onClick={clearCompleted}
+                  >
+                    Clear done
+                  </button>
+                )}
+              </div>
             </div>
-            {completedCount > 0 && (
-              <button
-                type="button"
-                className="text-btn"
-                onClick={clearCompleted}
-              >
-                Clear done
-              </button>
-            )}
-          </div>
-
+          )}
+        >
           <form
             className="todo-form"
             onSubmit={handleAddTask}
@@ -265,24 +379,32 @@ export function WidgetsPanel({
               ))
             )}
           </ul>
-        </div>
+        </WidgetSlot>
       );
     }
 
     return (
-      <div key="notes" className={cardClass} {...widgetDragProps}>
-        <div className="widget-header">
-          <div className="widget-title-group">
-            <span className="drag-grip" title="Drag to swap widgets">
-              <GripIcon size={14} />
-            </span>
-            <h3>Notes</h3>
-            <span className="widget-badge">Saved locally</span>
+      <WidgetSlot
+        key="notes"
+        {...slotProps}
+        renderHeaderExtra={(freeBadge) => (
+          <div className="widget-header">
+            <div className="widget-title-group">
+              <span data-reorder-grip className="drag-grip" title="Drag to swap widgets">
+                <GripIcon size={14} />
+              </span>
+              <h3>Notes</h3>
+              <span className="widget-badge">Saved locally</span>
+            </div>
+            <div className="widget-header-right">
+              {freeBadge}
+              {notes.length > 0 && (
+                <span className="notes-count">{notes.length} chars</span>
+              )}
+            </div>
           </div>
-          {notes.length > 0 && (
-            <span className="notes-count">{notes.length} chars</span>
-          )}
-        </div>
+        )}
+      >
         <textarea
           className="notes-textarea"
           value={notes}
@@ -292,7 +414,7 @@ export function WidgetsPanel({
           aria-label="Scratchpad notes"
           maxLength={12000}
         />
-      </div>
+      </WidgetSlot>
     );
   };
 

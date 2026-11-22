@@ -1,13 +1,15 @@
-import { useState } from 'react';
-import type { LayoutSettings, QuickLink } from '../types/settings';
+import { useRef, useState } from 'react';
+import type { FreePosition, LayoutSettings, QuickLink } from '../types/settings';
 import { extractDomainLabel, normalizeAndValidateUrl } from '../utils/url';
 import { FaviconBadge } from './FaviconBadge';
+import { FreeMoveBadge, useFreeDrag, useReorderArm } from './FreeMoveSlot';
 import {
   ArrowDownIcon,
   ArrowUpIcon,
   CheckIcon,
   CloseIcon,
   EditIcon,
+  GripIcon,
   PlusIcon,
   TrashIcon,
 } from './Icons';
@@ -19,6 +21,7 @@ interface QuickLinksProps {
   editMode: boolean;
   onToggleEditMode: () => void;
   onChange: (next: QuickLink[]) => void;
+  onSetFreePosition?: (itemId: string, pos: FreePosition | null) => void;
 }
 
 interface LinkDraft {
@@ -29,6 +32,202 @@ interface LinkDraft {
 
 const LINK_MIME = 'application/x-bonjorno-link';
 
+function QuickLinkTile({
+  link,
+  idx,
+  total,
+  layout,
+  openInNewTab,
+  editMode,
+  draggedId,
+  dragOverId,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+  onMove,
+  onEdit,
+  onDelete,
+  onSetFreePosition,
+}: {
+  link: QuickLink;
+  idx: number;
+  total: number;
+  layout: LayoutSettings;
+  openInNewTab: boolean;
+  editMode: boolean;
+  draggedId: string | null;
+  dragOverId: string | null;
+  onDragStart: (id: string) => void;
+  onDragOver: (id: string) => void;
+  onDragLeave: (id: string) => void;
+  onDrop: (id: string) => void;
+  onDragEnd: () => void;
+  onMove: (idx: number, delta: -1 | 1) => void;
+  onEdit: (link: QuickLink) => void;
+  onDelete: (id: string) => void;
+  onSetFreePosition: (itemId: string, pos: FreePosition | null) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const itemId = `quicklink:${link.id}`;
+  const {
+    isFree,
+    isFreeDragging,
+    activePos,
+    freeStyle,
+    startPointerDrag,
+    bodyPointerDown,
+    dockItem,
+  } = useFreeDrag({
+    itemId,
+    targetRef: ref,
+    freePositions: layout.freePositions,
+    snapToGrid: layout.snapToGrid,
+    onSetPosition: onSetFreePosition,
+  });
+  const reorder = useReorderArm();
+
+  const linkTargetProps = openInNewTab
+    ? { target: '_blank', rel: 'noopener noreferrer' }
+    : {};
+
+  return (
+    <div
+      ref={ref}
+      style={freeStyle}
+      className={`quicklink-item surface-card ${
+        dragOverId === link.id ? 'is-drag-over' : ''
+      } ${draggedId === link.id || isFreeDragging ? 'is-dragging' : ''} ${
+        editMode ? 'is-editable-item' : ''
+      } ${isFree ? 'is-free-placed' : ''}`}
+      {...reorder}
+      onPointerDown={
+        editMode ? (e) => bodyPointerDown(e, ref.current) : undefined
+      }
+      onDragStart={(e) => {
+        e.stopPropagation();
+        e.dataTransfer.setData(LINK_MIME, link.id);
+        e.dataTransfer.effectAllowed = 'move';
+        onDragStart(link.id);
+      }}
+      onDragOver={(e) => {
+        if (!draggedId && !e.dataTransfer.types.includes(LINK_MIME)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onDragOver(link.id);
+      }}
+      onDragLeave={(e) => {
+        e.stopPropagation();
+        onDragLeave(link.id);
+      }}
+      onDrop={(e) => {
+        if (!draggedId && !e.dataTransfer.types.includes(LINK_MIME)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onDrop(link.id);
+      }}
+      onDragEnd={(e) => {
+        e.stopPropagation();
+        onDragEnd();
+      }}
+    >
+      <a
+        href={link.url}
+        className="quicklink-anchor"
+        title={
+          editMode
+            ? `Click to edit ${link.title}, or drag it anywhere`
+            : `${link.title} — ${extractDomainLabel(link.url)}`
+        }
+        onClick={(e) => {
+          if (editMode) {
+            e.preventDefault();
+            onEdit(link);
+          }
+        }}
+        draggable={false}
+        {...linkTargetProps}
+      >
+        <FaviconBadge
+          url={link.url}
+          title={link.title}
+          size={layout.quickLinkLayout === 'compact' ? 20 : 30}
+        />
+        <span className="quicklink-text">
+          <span className="quicklink-title">{link.title}</span>
+          {layout.quickLinkLayout === 'list' && (
+            <span className="quicklink-domain">
+              {extractDomainLabel(link.url)}
+            </span>
+          )}
+        </span>
+      </a>
+
+      {editMode && (
+        <div
+          className="quicklink-actions is-visible"
+          aria-label={`Manage ${link.title}`}
+        >
+          <span
+            data-reorder-grip
+            className="pill-drag-grip"
+            title={`Drag to reorder ${link.title}`}
+          >
+            <GripIcon size={11} />
+          </span>
+          <FreeMoveBadge
+            label={link.title}
+            isFree={isFree}
+            activePos={activePos}
+            onStartFreeDrag={(e) => startPointerDrag(e, ref.current)}
+            onDock={dockItem}
+            compact
+          />
+          <button
+            type="button"
+            className="icon-btn-tiny"
+            onClick={() => onMove(idx, -1)}
+            disabled={idx === 0}
+            title="Move earlier"
+            aria-label={`Move ${link.title} earlier`}
+          >
+            <ArrowUpIcon size={12} />
+          </button>
+          <button
+            type="button"
+            className="icon-btn-tiny"
+            onClick={() => onMove(idx, 1)}
+            disabled={idx === total - 1}
+            title="Move later"
+            aria-label={`Move ${link.title} later`}
+          >
+            <ArrowDownIcon size={12} />
+          </button>
+          <button
+            type="button"
+            className="icon-btn-tiny"
+            onClick={() => onEdit(link)}
+            title="Edit shortcut"
+            aria-label={`Edit ${link.title}`}
+          >
+            <EditIcon size={12} />
+          </button>
+          <button
+            type="button"
+            className="icon-btn-tiny danger"
+            onClick={() => onDelete(link.id)}
+            title="Delete shortcut"
+            aria-label={`Delete ${link.title}`}
+          >
+            <TrashIcon size={12} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function QuickLinks({
   links,
   layout,
@@ -36,6 +235,7 @@ export function QuickLinks({
   editMode,
   onToggleEditMode,
   onChange,
+  onSetFreePosition,
 }: QuickLinksProps) {
   const [draft, setDraft] = useState<LinkDraft | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -84,6 +284,9 @@ export function QuickLinks({
   };
 
   const handleDelete = (id: string) => {
+    if (onSetFreePosition) {
+      onSetFreePosition(`quicklink:${id}`, null);
+    }
     onChange(links.filter((item) => item.id !== id));
   };
 
@@ -114,9 +317,11 @@ export function QuickLinks({
     setDragOverId(null);
   };
 
-  const linkTargetProps = openInNewTab
-    ? { target: '_blank', rel: 'noopener noreferrer' }
-    : {};
+  const handleSetFreePos = (itemId: string, pos: FreePosition | null) => {
+    if (onSetFreePosition) {
+      onSetFreePosition(itemId, pos);
+    }
+  };
 
   return (
     <section
@@ -134,120 +339,33 @@ export function QuickLinks({
         }
       >
         {links.map((link, idx) => (
-          <div
+          <QuickLinkTile
             key={link.id}
-            className={`quicklink-item surface-card ${
-              dragOverId === link.id ? 'is-drag-over' : ''
-            } ${draggedId === link.id ? 'is-dragging' : ''} ${
-              editMode ? 'is-editable-item' : ''
-            }`}
-            draggable
-            onDragStart={(e) => {
-              e.stopPropagation();
-              e.dataTransfer.setData(LINK_MIME, link.id);
-              e.dataTransfer.effectAllowed = 'move';
-              setDraggedId(link.id);
+            link={link}
+            idx={idx}
+            total={links.length}
+            layout={layout}
+            openInNewTab={openInNewTab}
+            editMode={editMode}
+            draggedId={draggedId}
+            dragOverId={dragOverId}
+            onDragStart={(id) => setDraggedId(id)}
+            onDragOver={(id) => {
+              if (dragOverId !== id) setDragOverId(id);
             }}
-            onDragOver={(e) => {
-              if (!draggedId && !e.dataTransfer.types.includes(LINK_MIME)) return;
-              e.preventDefault();
-              e.stopPropagation();
-              if (dragOverId !== link.id) setDragOverId(link.id);
+            onDragLeave={(id) => {
+              if (dragOverId === id) setDragOverId(null);
             }}
-            onDragLeave={(e) => {
-              e.stopPropagation();
-              if (dragOverId === link.id) setDragOverId(null);
-            }}
-            onDrop={(e) => {
-              if (!draggedId && !e.dataTransfer.types.includes(LINK_MIME)) return;
-              e.preventDefault();
-              e.stopPropagation();
-              handleDrop(link.id);
-            }}
-            onDragEnd={(e) => {
-              e.stopPropagation();
+            onDrop={handleDrop}
+            onDragEnd={() => {
               setDraggedId(null);
               setDragOverId(null);
             }}
-          >
-            <a
-              href={link.url}
-              className="quicklink-anchor"
-              title={
-                editMode
-                  ? `Click to edit ${link.title} or drag to reorder`
-                  : `${link.title} — ${extractDomainLabel(link.url)}`
-              }
-              onClick={(e) => {
-                if (editMode) {
-                  e.preventDefault();
-                  openEditModal(link);
-                }
-              }}
-              draggable={false}
-              {...linkTargetProps}
-            >
-              <FaviconBadge
-                url={link.url}
-                title={link.title}
-                size={layout.quickLinkLayout === 'compact' ? 20 : 30}
-              />
-              <span className="quicklink-text">
-                <span className="quicklink-title">{link.title}</span>
-                {layout.quickLinkLayout === 'list' && (
-                  <span className="quicklink-domain">
-                    {extractDomainLabel(link.url)}
-                  </span>
-                )}
-              </span>
-            </a>
-
-            {editMode && (
-              <div
-                className="quicklink-actions is-visible"
-                aria-label={`Manage ${link.title}`}
-              >
-                <button
-                  type="button"
-                  className="icon-btn-tiny"
-                  onClick={() => moveLink(idx, -1)}
-                  disabled={idx === 0}
-                  title="Move earlier"
-                  aria-label={`Move ${link.title} earlier`}
-                >
-                  <ArrowUpIcon size={12} />
-                </button>
-                <button
-                  type="button"
-                  className="icon-btn-tiny"
-                  onClick={() => moveLink(idx, 1)}
-                  disabled={idx === links.length - 1}
-                  title="Move later"
-                  aria-label={`Move ${link.title} later`}
-                >
-                  <ArrowDownIcon size={12} />
-                </button>
-                <button
-                  type="button"
-                  className="icon-btn-tiny"
-                  onClick={() => openEditModal(link)}
-                  title="Edit shortcut"
-                  aria-label={`Edit ${link.title}`}
-                >
-                  <EditIcon size={12} />
-                </button>
-                <button
-                  type="button"
-                  className="icon-btn-tiny danger"
-                  onClick={() => handleDelete(link.id)}
-                  title="Delete shortcut"
-                  aria-label={`Delete ${link.title}`}
-                >
-                  <TrashIcon size={12} />
-                </button>
-              </div>
-            )}
-          </div>
+            onMove={moveLink}
+            onEdit={openEditModal}
+            onDelete={handleDelete}
+            onSetFreePosition={handleSetFreePos}
+          />
         ))}
       </div>
 
