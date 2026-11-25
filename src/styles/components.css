@@ -1964,6 +1964,20 @@
   transition: opacity var(--duration-fast), box-shadow var(--duration-fast);
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .app-shell:not(.is-edit-mode) .topbar-hover-control > .topbar-pill {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .app-shell:not(.is-edit-mode) .corner-zone:hover .topbar-hover-control:not(.is-free-placed) > .topbar-pill,
+  .app-shell:not(.is-edit-mode) .topbar-hover-control:hover > .topbar-pill,
+  .app-shell:not(.is-edit-mode) .topbar-hover-control:focus-within > .topbar-pill {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 /* Mini music player */
 .music-player {
   position: fixed;

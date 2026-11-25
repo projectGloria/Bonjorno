@@ -181,12 +181,65 @@ button:disabled {
 }
 
 .dashboard-stack {
+  position: relative;
   width: 100%;
   max-width: var(--container-max);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-stack);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-entrance="rise"] .dashboard-stack {
+    animation: dashboard-rise 480ms var(--ease-out) backwards;
+  }
+
+  [data-entrance="drop"] .dashboard-stack {
+    animation: dashboard-drop 460ms var(--ease-out) backwards;
+  }
+
+  [data-entrance="slide-left"] .dashboard-stack {
+    animation: dashboard-slide-left 500ms var(--ease-out) backwards;
+  }
+
+  [data-entrance="slide-right"] .dashboard-stack {
+    animation: dashboard-slide-right 500ms var(--ease-out) backwards;
+  }
+
+  [data-entrance="stagger"] .dashboard-section-slot:not(.is-free-placed) {
+    animation: dashboard-fade 380ms var(--ease-out) backwards;
+  }
+
+  [data-entrance="stagger"] .dashboard-section-slot:nth-child(2) { animation-delay: 70ms; }
+  [data-entrance="stagger"] .dashboard-section-slot:nth-child(3) { animation-delay: 140ms; }
+  [data-entrance="stagger"] .dashboard-section-slot:nth-child(4) { animation-delay: 210ms; }
+}
+
+/* Relative offsets leave fixed descendants anchored to the viewport. */
+@keyframes dashboard-rise {
+  from { top: 26px; opacity: 0; }
+  to { top: 0; opacity: 1; }
+}
+
+@keyframes dashboard-drop {
+  from { top: -22px; opacity: 0; }
+  to { top: 0; opacity: 1; }
+}
+
+@keyframes dashboard-slide-left {
+  from { left: -24px; opacity: 0; }
+  to { left: 0; opacity: 1; }
+}
+
+@keyframes dashboard-slide-right {
+  from { left: 24px; opacity: 0; }
+  to { left: 0; opacity: 1; }
+}
+
+@keyframes dashboard-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .links-cluster {

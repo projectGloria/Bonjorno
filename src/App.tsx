@@ -35,6 +35,8 @@ import type {
 const SECTION_MIME = 'application/x-bonjorno-section';
 const PILL_MIME = 'application/x-bonjorno-pill';
 const CLUSTER_PART_MIME = 'application/x-bonjorno-cluster-part';
+const ENTRANCES = ['rise', 'drop', 'slide-left', 'slide-right', 'stagger'] as const;
+const ENTRANCE_WINDOW_MS = 700;
 
 const SECTION_TITLES: Record<DashboardSectionId, string> = {
   hero: 'Clock & Greeting',
@@ -139,7 +141,7 @@ function DraggablePillSlot({
         dragOverPill === pillId ? 'is-drag-over' : ''
       } ${draggedPill === pillId || isFreeDragging ? 'is-dragging' : ''} ${
         isFree ? 'is-free-placed' : ''
-      }`}
+      } ${pillId === 'edit' || pillId === 'settings' ? 'topbar-hover-control' : ''}`}
       {...reorder}
       onPointerDown={
         editMode ? (e) => bodyPointerDown(e, ref.current) : undefined
@@ -360,6 +362,15 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [bookmarksOpen, setBookmarksOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [entrance, setEntrance] = useState<(typeof ENTRANCES)[number] | null>(
+    () => ENTRANCES[Math.floor(Math.random() * ENTRANCES.length)]
+  );
+
+  useEffect(() => {
+    if (!loaded) return;
+    const timer = window.setTimeout(() => setEntrance(null), ENTRANCE_WINDOW_MS);
+    return () => window.clearTimeout(timer);
+  }, [loaded]);
 
   const [draggedSection, setDraggedSection] =
     useState<DashboardSectionId | null>(null);
@@ -956,6 +967,7 @@ export function App() {
 
   return (
     <div
+      data-entrance={loaded && settings.behavior.enableAnimations ? entrance ?? undefined : undefined}
       className={`app-shell ${loaded ? 'is-ready' : ''} ${
         editMode ? 'is-edit-mode' : ''
       } ${editMode && settings.layout.snapToGrid ? 'show-snap-grid' : ''}`}
